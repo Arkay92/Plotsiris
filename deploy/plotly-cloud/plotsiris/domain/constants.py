@@ -1,0 +1,392 @@
+"""Constants, presets, and seed definitions for Plotsiris."""
+
+from typing import Dict, Any, List
+
+# Map view presets with center and zoom
+REGION_PRESETS = {
+    "global": {"name": "Global", "lat": 20.0, "lon": 10.0, "zoom": 1.5},
+    "europe": {"name": "Europe", "lat": 50.0, "lon": 15.0, "zoom": 3.8},
+    "middle_east": {"name": "Middle East", "lat": 29.5, "lon": 44.0, "zoom": 4.5},
+    "east_asia": {"name": "East Asia", "lat": 32.0, "lon": 125.0, "zoom": 4.0},
+    "americas": {"name": "Americas", "lat": 38.0, "lon": -95.0, "zoom": 3.2},
+    "ukraine": {"name": "Ukraine", "lat": 48.5, "lon": 36.0, "zoom": 5.8},
+    "africa": {"name": "Africa", "lat": 5.0, "lon": 22.0, "zoom": 3.0},
+    "se_asia": {"name": "SE Asia", "lat": 5.0, "lon": 110.0, "zoom": 4.0},
+    "red_sea": {"name": "Red Sea & Hormuz", "lat": 20.0, "lon": 48.0, "zoom": 5.0},
+    "arctic": {"name": "Arctic", "lat": 75.0, "lon": 10.0, "zoom": 2.5},
+    "india": {"name": "India / Indo-Pacific", "lat": 21.0, "lon": 82.0, "zoom": 4.2},
+    "sudan": {"name": "Sudan / Sahel", "lat": 14.0, "lon": 30.0, "zoom": 5.2},
+}
+
+# Supported map layer definitions
+LAYER_DEFINITIONS = {
+    "aviation": {
+        "id": "aviation",
+        "name": "Live Aviation (ADS-B)",
+        "category": "mobility",
+        "icon": "bi bi-airplane-fill",
+        "color": "#38bdf8",
+        "default": True,
+        "description": "Live civil, commercial and military aircraft radar tracking."
+    },
+    "maritime": {
+        "id": "maritime",
+        "name": "Live Maritime (AIS)",
+        "category": "mobility",
+        "icon": "bi bi-water",
+        "color": "#0ea5e9",
+        "default": True,
+        "description": "Commercial cargo, tanker, passenger, and naval vessels with heading vectors."
+    },
+    "cables": {
+        "id": "cables",
+        "name": "Submarine Data Cables",
+        "category": "infrastructure",
+        "icon": "bi bi-diagram-3-fill",
+        "color": "#818cf8",
+        "default": True,
+        "description": "Transoceanic fiber-optic submarine telecommunication cables and landing stations."
+    },
+    "chokepoints": {
+        "id": "chokepoints",
+        "name": "Maritime Strategic Chokepoints",
+        "category": "infrastructure",
+        "icon": "bi bi-shield-exclamation",
+        "color": "#f59e0b",
+        "default": True,
+        "description": "Critical geopolitical maritime straits, canals, and trade vulnerabilities."
+    },
+    "cctv": {
+        "id": "cctv",
+        "name": "Surveillance CCTV Feeds",
+        "category": "surveillance",
+        "icon": "bi bi-camera-video-fill",
+        "color": "#10b981",
+        "default": True,
+        "description": "Worldwide government highway cameras & open surveillance streams."
+    },
+    "earthquakes": {
+        "id": "earthquakes",
+        "name": "Seismic Activity (USGS)",
+        "category": "hazards",
+        "icon": "bi bi-activity",
+        "color": "#ef4444",
+        "default": True,
+        "description": "Recent 24-hour global earthquakes, depth and magnitude."
+    },
+    "fires": {
+        "id": "fires",
+        "name": "Active Wildfires (FIRMS)",
+        "category": "hazards",
+        "icon": "bi bi-fire",
+        "color": "#f97316",
+        "default": True,
+        "description": "NASA FIRMS thermal anomalies and wildfire hotspot detections."
+    },
+    "weather": {
+        "id": "weather",
+        "name": "Severe Weather Alerts",
+        "category": "hazards",
+        "icon": "bi bi-cloud-lightning-rain-fill",
+        "color": "#06b6d4",
+        "default": True,
+        "description": "Tropical storms, extreme weather warnings, and meteorological alerts."
+    },
+    "conflict": {
+        "id": "conflict",
+        "name": "Conflict Zones & Frontlines",
+        "category": "geopolitics",
+        "icon": "bi bi-crosshair",
+        "color": "#dc2626",
+        "default": True,
+        "description": "Active conflict theatres, territorial control lines, and tactical incidents."
+    },
+    "nuclear": {
+        "id": "nuclear",
+        "name": "Nuclear & Energy Facilities",
+        "category": "infrastructure",
+        "icon": "bi bi-radioactive",
+        "color": "#eab308",
+        "default": True,
+        "description": "Nuclear power stations, research reactors, and strategic grid hubs."
+    },
+    "cyber": {
+        "id": "cyber",
+        "name": "Cyber Threats & KEV",
+        "category": "cyber",
+        "icon": "bi bi-bug-fill",
+        "color": "#a855f7",
+        "default": True,
+        "description": "CISA KEV active vulnerabilities, Tor exit nodes, and malicious infrastructure."
+    },
+    "satellites": {
+        "id": "satellites",
+        "name": "Satellites & Orbit Tracks",
+        "category": "space",
+        "icon": "bi bi-broadcast-pin",
+        "color": "#ec4899",
+        "default": True,
+        "description": "ISS, reconnaissance satellites, GPS constellations, and orbital tracks."
+    },
+    "recon": {
+        "id": "recon",
+        "name": "OSINT Recon Findings",
+        "category": "recon",
+        "icon": "bi bi-geo-alt-fill",
+        "color": "#00e5ff",
+        "default": True,
+        "description": "Target IP/domain reconnaissance pins with verdict assessment color-coding."
+    }
+}
+
+# Major Global Maritime Chokepoints
+MARITIME_CHOKEPOINTS = [
+    {
+        "id": "choke_suez",
+        "name": "Suez Canal",
+        "country": "Egypt",
+        "lat": 30.5852,
+        "lon": 32.2654,
+        "daily_volume": "12% of global trade / 30% of container traffic",
+        "risk_level": "ELEVATED",
+        "description": "Critical waterway linking Mediterranean Sea to Red Sea and Indian Ocean."
+    },
+    {
+        "id": "choke_bab_el_mandeb",
+        "name": "Bab el-Mandeb Strait",
+        "country": "Yemen / Djibouti",
+        "lat": 12.5833,
+        "lon": 43.3333,
+        "daily_volume": "6.2M barrels of oil/day",
+        "risk_level": "CRITICAL",
+        "description": "Southern gateway to Red Sea; vulnerable to regional anti-ship missile attacks."
+    },
+    {
+        "id": "choke_hormuz",
+        "name": "Strait of Hormuz",
+        "country": "Iran / Oman",
+        "lat": 26.5667,
+        "lon": 56.2500,
+        "daily_volume": "21M barrels of oil/day (21% of petroleum consumption)",
+        "risk_level": "HIGH",
+        "description": "The world's most critical petroleum transit chokepoint."
+    },
+    {
+        "id": "choke_malacca",
+        "name": "Strait of Malacca",
+        "country": "Singapore / Malaysia / Indonesia",
+        "lat": 2.5000,
+        "lon": 101.5000,
+        "daily_volume": "16M barrels/day; 84,000 vessels/year",
+        "risk_level": "LOW",
+        "description": "Main shipping channel between Indian Ocean and Pacific Ocean."
+    },
+    {
+        "id": "choke_panama",
+        "name": "Panama Canal",
+        "country": "Panama",
+        "lat": 9.0800,
+        "lon": -79.6800,
+        "daily_volume": "5% of global maritime commerce",
+        "risk_level": "ELEVATED",
+        "description": "Interoceanic lock-based canal linking Atlantic and Pacific Oceans."
+    },
+    {
+        "id": "choke_gibraltar",
+        "name": "Strait of Gibraltar",
+        "country": "Spain / Morocco / UK",
+        "lat": 35.9667,
+        "lon": -5.6000,
+        "daily_volume": "71,000 vessels annually",
+        "risk_level": "LOW",
+        "description": "Strategic maritime strait connecting Atlantic Ocean to Mediterranean Sea."
+    },
+    {
+        "id": "choke_bosporus",
+        "name": "Turkish Straits (Bosporus & Dardanelles)",
+        "country": "Turkey",
+        "lat": 41.1167,
+        "lon": 29.0833,
+        "daily_volume": "3M barrels/day; 48,000 ships/year",
+        "risk_level": "HIGH",
+        "description": "Sole maritime outlet for Black Sea nations; Montreux Convention regulated."
+    },
+    {
+        "id": "choke_danish",
+        "name": "Danish Straits",
+        "country": "Denmark / Sweden",
+        "lat": 55.6000,
+        "lon": 11.0000,
+        "daily_volume": "3.2M barrels/day oil transit",
+        "risk_level": "ELEVATED",
+        "description": "Series of channels connecting Baltic Sea to North Sea."
+    }
+]
+
+# Strategic Submarine Cables (Representative Major Transoceanic Arteries)
+STRATEGIC_SUBSEA_CABLES = [
+    {
+        "id": "cable_transatlantic_apollo",
+        "name": "Apollo Subsea Cable (US - UK - FR)",
+        "lats": [40.71, 41.5, 45.0, 49.5, 50.1, 49.2],
+        "lons": [-74.0, -65.0, -40.0, -15.0, -5.2, -0.5],
+        "capacity": "25 Tbps",
+        "color": "#818cf8"
+    },
+    {
+        "id": "cable_sea_me_we_5",
+        "name": "SEA-ME-WE 5 (FR - IT - EG - SA - IN - SG)",
+        "lats": [43.3, 38.0, 31.2, 27.5, 21.5, 18.9, 5.9, 1.3],
+        "lons": [5.3, 13.0, 30.0, 35.0, 38.5, 72.8, 80.2, 103.8],
+        "capacity": "24 Tbps",
+        "color": "#38bdf8"
+    },
+    {
+        "id": "cable_transpacific_fafe",
+        "name": "Faster Trans-Pacific (US - JP - TW)",
+        "lats": [37.8, 42.0, 48.0, 45.0, 35.7, 25.0],
+        "lons": [-122.4, -145.0, -170.0, 160.0, 140.8, 121.5],
+        "capacity": "60 Tbps",
+        "color": "#34d399"
+    },
+    {
+        "id": "cable_2africa",
+        "name": "2Africa Ring (UK - PT - ZA - KE - EG)",
+        "lats": [50.5, 38.7, 14.7, -4.3, -33.9, -4.0, 11.5, 27.8, 31.0],
+        "lons": [-4.5, -9.1, -17.4, 11.8, 18.4, 39.6, 43.1, 34.0, 32.5],
+        "capacity": "180 Tbps",
+        "color": "#f472b6"
+    }
+]
+
+# Curated CCTV and Live Camera Registry
+CCTV_REGISTRY = [
+    {
+        "id": "cam_tw_01",
+        "name": "Taipei Freeway 1 - Yuanshan Interchange",
+        "country": "Taiwan",
+        "region": "Taipei",
+        "lat": 25.0760,
+        "lon": 121.5280,
+        "stream_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=80",
+        "thumbnail_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=300&auto=format&fit=crop&q=80",
+        "feed_type": "snapshot",
+        "status": "ONLINE",
+        "provider": "Taiwan THB Traffic Bureau"
+    },
+    {
+        "id": "cam_tw_02",
+        "name": "Kaohsiung Port Terminal 4",
+        "country": "Taiwan",
+        "region": "Kaohsiung",
+        "lat": 22.6130,
+        "lon": 120.2850,
+        "stream_url": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=600&auto=format&fit=crop&q=80",
+        "thumbnail_url": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=300&auto=format&fit=crop&q=80",
+        "feed_type": "snapshot",
+        "status": "ONLINE",
+        "provider": "Taiwan Port Authority"
+    },
+    {
+        "id": "cam_us_ca_01",
+        "name": "San Francisco Bay Bridge / I-80",
+        "country": "United States",
+        "region": "California",
+        "lat": 37.7983,
+        "lon": -122.3778,
+        "stream_url": "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=600&auto=format&fit=crop&q=80",
+        "thumbnail_url": "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=300&auto=format&fit=crop&q=80",
+        "feed_type": "snapshot",
+        "status": "ONLINE",
+        "provider": "Caltrans District 4"
+    },
+    {
+        "id": "cam_us_ny_01",
+        "name": "Times Square 46th St & Broadway",
+        "country": "United States",
+        "region": "New York",
+        "lat": 40.7580,
+        "lon": -73.9855,
+        "stream_url": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=80",
+        "thumbnail_url": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=300&auto=format&fit=crop&q=80",
+        "feed_type": "snapshot",
+        "status": "ONLINE",
+        "provider": "EarthCam / NYC DOT"
+    },
+    {
+        "id": "cam_uk_tfl_01",
+        "name": "London Tower Bridge Approach",
+        "country": "United Kingdom",
+        "region": "London",
+        "lat": 51.5055,
+        "lon": -0.0754,
+        "stream_url": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&auto=format&fit=crop&q=80",
+        "thumbnail_url": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=300&auto=format&fit=crop&q=80",
+        "feed_type": "snapshot",
+        "status": "ONLINE",
+        "provider": "Transport for London (TfL)"
+    },
+    {
+        "id": "cam_sg_01",
+        "name": "Singapore Marina Coastal Expressway",
+        "country": "Singapore",
+        "region": "Central",
+        "lat": 1.2789,
+        "lon": 103.8536,
+        "stream_url": "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&auto=format&fit=crop&q=80",
+        "thumbnail_url": "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=300&auto=format&fit=crop&q=80",
+        "feed_type": "snapshot",
+        "status": "ONLINE",
+        "provider": "Land Transport Authority (LTA)"
+    },
+    {
+        "id": "cam_ie_01",
+        "name": "Dublin M50 Junction 9 Red Cow",
+        "country": "Ireland",
+        "region": "Dublin",
+        "lat": 53.3160,
+        "lon": -6.3680,
+        "stream_url": "https://images.unsplash.com/photo-1549880338-65ddcdfd017b?w=600&auto=format&fit=crop&q=80",
+        "thumbnail_url": "https://images.unsplash.com/photo-1549880338-65ddcdfd017b?w=300&auto=format&fit=crop&q=80",
+        "feed_type": "snapshot",
+        "status": "ONLINE",
+        "provider": "Transport Infrastructure Ireland (TII)"
+    },
+    {
+        "id": "cam_de_01",
+        "name": "Frankfurt Airport A3 Autobahn",
+        "country": "Germany",
+        "region": "Hesse",
+        "lat": 50.0379,
+        "lon": 8.5622,
+        "stream_url": "https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=600&auto=format&fit=crop&q=80",
+        "thumbnail_url": "https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=300&auto=format&fit=crop&q=80",
+        "feed_type": "snapshot",
+        "status": "ONLINE",
+        "provider": "Autobahn GmbH"
+    }
+]
+
+# Curated 20 OSINT Tools List for the Reconnaissance Suite
+OSINT_TOOLS = [
+    {"id": "dns", "name": "DNS ENUM", "icon": "bi-globe", "desc": "Resolve A, AAAA, MX, NS, TXT, CNAME via Google DoH", "placeholder": "e.g. google.com or 8.8.8.8"},
+    {"id": "whois", "name": "WHOIS / RDAP", "icon": "bi-person-badge", "desc": "Domain registrar, registrant info & OFAC sanctions check", "placeholder": "e.g. microsoft.com"},
+    {"id": "portscan", "name": "PORT SCAN", "icon": "bi-door-open", "desc": "Fast non-blocking TCP port audit on critical ports", "placeholder": "e.g. scanme.nmap.org or 1.1.1.1"},
+    {"id": "shodan", "name": "SHODAN IoT", "icon": "bi-hdd-network", "desc": "Query Shodan InternetDB for open ports, tags, CVEs", "placeholder": "e.g. 1.1.1.1 or 8.8.4.4"},
+    {"id": "bgp", "name": "BGP / ASN", "icon": "bi-diagram-2", "desc": "RIPEstat BGP prefix routing, ASN, and announcing peer info", "placeholder": "e.g. 8.8.8.8 or AS15169"},
+    {"id": "headers", "name": "HTTP HEADERS", "icon": "bi-shield-check", "desc": "Audit HSTS, CSP, X-Frame, CORS & security flags", "placeholder": "e.g. https://github.com"},
+    {"id": "ssl", "name": "SSL / TLS", "icon": "bi-lock", "desc": "Inspect X.509 certificate expiry, issuer, cipher strength", "placeholder": "e.g. cloudflare.com:443"},
+    {"id": "subdomains", "name": "SUBDOMAINS", "icon": "bi-folder2-open", "desc": "Enumerate subdomains via Certificate Transparency", "placeholder": "e.g. nasa.gov"},
+    {"id": "certs", "name": "CERTS (crt.sh)", "icon": "bi-patch-check", "desc": "Query public Certificate Transparency log databases", "placeholder": "e.g. tesla.com"},
+    {"id": "tech", "name": "TECH DETECT", "icon": "bi-cpu", "desc": "Fingerprint backend stack, web server, and CMS engines", "placeholder": "e.g. https://wordpress.org"},
+    {"id": "mac", "name": "MAC VENDOR", "icon": "bi-ethernet", "desc": "Lookup hardware vendor OUI from MAC address", "placeholder": "e.g. 00:1A:2B:3C:4D:5E"},
+    {"id": "phone", "name": "PHONE INTEL", "icon": "bi-telephone", "desc": "Analyze telephone numbers, E.164, carrier line type", "placeholder": "e.g. +14155552671"},
+    {"id": "ip_geo", "name": "IP GEOLOCATE", "icon": "bi-pin-map", "desc": "Pinpoint country, city, ISP, ASN, and coordinates", "placeholder": "e.g. 142.250.190.46"},
+    {"id": "cve_lookup", "name": "CVE / VULN", "icon": "bi-bug", "desc": "Lookup CISA KEV and NVD vulnerability scoring", "placeholder": "e.g. CVE-2024-38077 or Log4j"},
+    {"id": "urlhaus", "name": "URLHAUS", "icon": "bi-virus", "desc": "Check abuse.ch malware distribution repository", "placeholder": "e.g. suspicious-site.xyz"},
+    {"id": "dns_threat", "name": "DNS THREAT", "icon": "bi-exclamation-octagon", "desc": "Cross-reference Spamhaus DNSBL and reputation lists", "placeholder": "e.g. 185.220.101.5"},
+    {"id": "leaks", "name": "DATA BREACH", "icon": "bi-envelope-exclamation", "desc": "Check public exposure catalogs for compromised records", "placeholder": "e.g. target@example.com"},
+    {"id": "github", "name": "GITHUB RECON", "icon": "bi-github", "desc": "Profile public repositories, contributors, key exposure", "placeholder": "e.g. octocat"},
+    {"id": "subnet", "name": "IP SWEEP", "icon": "bi-broadcast", "desc": "CIDR prefix sweep and device discovery", "placeholder": "e.g. 192.168.1.0/24"},
+    {"id": "ismalicious", "name": "ISMALICIOUS", "icon": "bi-shield-slash", "desc": "Multi-source consolidated cyber threat rating", "placeholder": "e.g. badguy.top"}
+]

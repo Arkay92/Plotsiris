@@ -1,0 +1,203 @@
+/* Plotsiris Military-Grade SIGINT & Geospatial Dashboard Styles */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-dark: #0a0e14;
+    --bg-dark-panel: rgba(13, 19, 29, 0.88);
+    --bg-dark-hover: rgba(22, 33, 50, 0.95);
+    --border-dark: rgba(0, 229, 255, 0.25);
+    --text-primary-dark: #f1f5f9;
+    --text-secondary-dark: #94a3b8;
+    --neon-cyan: #00e5ff;
+    --neon-green: #10b981;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-purple: #a855f7;
+    --neon-pink: #ec4899;
+
+    --bg-light: #f8fafc;
+    --bg-light-panel: rgba(255, 255, 255, 0.92);
+    --bg-light-hover: rgba(241, 245, 249, 0.95);
+    --border-light: rgba(148, 163, 184, 0.35);
+    --text-primary-light: #0f172a;
+    --text-secondary-light: #475569;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    font-family: 'JetBrains Mono', 'Inter', monospace, sans-serif;
+    background-color: var(--bg-dark);
+    color: var(--text-primary-dark);
+    user-select: none;
+}
+
+/* Glassmorphism Tactical Panels */
+.glass-panel {
+    background: var(--bg-dark-panel);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-dark);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.65);
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+}
+
+.theme-core .glass-panel {
+    background: var(--bg-light-panel);
+    border: 1px solid var(--border-light);
+    box-shadow: 0 6px 20px 0 rgba(0, 0, 0, 0.08);
+}
+
+/* Top Navigation Status Bar */
+.status-bar {
+    position: relative;
+    height: 52px;
+    z-index: 1000;
+    border-bottom: 1px solid var(--border-dark);
+    padding: 0 16px;
+}
+
+.brand-badge {
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: var(--neon-cyan);
+    text-transform: uppercase;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.pulse-indicator {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background-color: var(--neon-green);
+    box-shadow: 0 0 10px var(--neon-green);
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Tickers & Region Presets */
+.preset-btn {
+    font-size: 0.72rem;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(15, 23, 42, 0.75);
+    border: 1px solid rgba(0, 229, 255, 0.2);
+    color: #e2e8f0;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.preset-btn:hover {
+    background: rgba(0, 229, 255, 0.2);
+    border-color: var(--neon-cyan);
+    color: #ffffff;
+}
+
+/* Left Layer Rail */
+.layer-rail {
+    position: absolute;
+    top: 60px;
+    left: 14px;
+    width: 290px;
+    max-height: calc(100vh - 80px);
+    z-index: 900;
+    overflow-y: auto;
+}
+
+.layer-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 7px 12px;
+    border-radius: 4px;
+    margin-bottom: 4px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+}
+
+.layer-item:hover {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(0, 229, 255, 0.25);
+}
+
+.layer-count-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 10px;
+    background: rgba(0, 229, 255, 0.15);
+    color: var(--neon-cyan);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+}
+
+/* Inspector Detail Floating Card */
+.inspector-card {
+    position: absolute;
+    bottom: 24px;
+    left: 320px;
+    width: 380px;
+    z-index: 900;
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Offcanvas Drawer Panels */
+.offcanvas-custom {
+    background-color: #0b111a !important;
+    color: #f1f5f9 !important;
+    border-left: 1px solid var(--border-dark) !important;
+    width: 520px !important;
+}
+
+.offcanvas-custom .offcanvas-header {
+    border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+    padding: 14px 20px;
+}
+
+/* OSINT Result Card */
+.osint-verdict-clean {
+    border-left: 4px solid var(--neon-cyan) !important;
+}
+.osint-verdict-suspicious {
+    border-left: 4px solid var(--neon-amber) !important;
+}
+.osint-verdict-malicious {
+    border-left: 4px solid var(--neon-red) !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(10, 14, 20, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.25);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--neon-cyan);
+}
