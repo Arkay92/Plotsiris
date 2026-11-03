@@ -87,6 +87,8 @@ def create_layout() -> html.Div:
                             dbc.Button(
                                 [html.I(className="bi bi-search me-1 text-info"), "OSINT (20)"],
                                 id="btn-open-osint",
+                                type="button",
+                                n_clicks=0,
                                 size="sm",
                                 color="dark",
                                 className="border-secondary fw-bold",
@@ -95,6 +97,8 @@ def create_layout() -> html.Div:
                             dbc.Button(
                                 [html.I(className="bi bi-cpu me-1 text-info"), "AI ANALYST"],
                                 id="btn-open-ai",
+                                type="button",
+                                n_clicks=0,
                                 size="sm",
                                 color="dark",
                                 className="border-secondary fw-bold",
@@ -103,6 +107,8 @@ def create_layout() -> html.Div:
                             dbc.Button(
                                 [html.I(className="bi bi-shield-lock me-1 text-danger"), "CYBER"],
                                 id="btn-open-cyber",
+                                type="button",
+                                n_clicks=0,
                                 size="sm",
                                 color="dark",
                                 className="border-secondary fw-bold",
@@ -111,6 +117,8 @@ def create_layout() -> html.Div:
                             dbc.Button(
                                 [html.I(className="bi bi-diagram-3 me-1 text-primary"), "GRAPH"],
                                 id="btn-open-graph",
+                                type="button",
+                                n_clicks=0,
                                 size="sm",
                                 color="dark",
                                 className="border-secondary fw-bold",
@@ -119,6 +127,8 @@ def create_layout() -> html.Div:
                             dbc.Button(
                                 [html.I(className="bi bi-graph-up me-1 text-warning"), "MARKETS"],
                                 id="btn-open-markets",
+                                type="button",
+                                n_clicks=0,
                                 size="sm",
                                 color="dark",
                                 className="border-secondary fw-bold",
@@ -127,6 +137,18 @@ def create_layout() -> html.Div:
                             dbc.Button(
                                 [html.I(className="bi bi-broadcast me-1 text-success"), "NEWS"],
                                 id="btn-open-news",
+                                type="button",
+                                n_clicks=0,
+                                size="sm",
+                                color="dark",
+                                className="border-secondary fw-bold",
+                                style={"fontSize": "0.78rem"}
+                            ),
+                            dbc.Button(
+                                [html.I(className="bi bi-camera-video me-1 text-success"), "CCTV"],
+                                id="btn-open-cctv",
+                                type="button",
+                                n_clicks=0,
                                 size="sm",
                                 color="dark",
                                 className="border-secondary fw-bold",
@@ -135,6 +157,8 @@ def create_layout() -> html.Div:
                             dbc.Button(
                                 html.I(className="bi bi-moon-stars-fill"),
                                 id="btn-toggle-theme",
+                                type="button",
+                                n_clicks=0,
                                 size="sm",
                                 color="dark",
                                 className="border-secondary ms-1",
@@ -153,12 +177,13 @@ def create_layout() -> html.Div:
                     dcc.Graph(
                         id="main-map",
                         figure=initial_fig,
+                        responsive=True,
                         config={
                             "displayModeBar": False,
                             "scrollZoom": True,
                             "doubleClick": "reset"
                         },
-                        style={"width": "100%", "height": "100%"}
+                        style={"width": "100%", "height": "calc(100vh - 52px)"}
                     )
                 ]
             ),

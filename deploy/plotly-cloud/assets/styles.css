@@ -201,3 +201,61 @@ body {
 ::-webkit-scrollbar-thumb:hover {
     background: var(--neon-cyan);
 }
+
+/* ==========================================================================
+   Cursor Pointer & Interactive Event Hover Styling
+   ========================================================================== */
+#main-map,
+#main-map canvas,
+#main-map .gl-canvas,
+#main-map .maplibregl-canvas {
+    cursor: grab;
+}
+
+#main-map:active,
+#main-map canvas:active {
+    cursor: grabbing;
+}
+
+/* Event hover pointer targets */
+#main-map .hoverlayer,
+#main-map .hoverlayer *,
+#main-map .point,
+#main-map .scatterlayer .point,
+#main-map path.point,
+.js-plotly-plot .hoverlayer,
+.js-plotly-plot .hoverlayer *,
+.layer-item,
+.preset-btn,
+.glass-panel,
+.btn,
+.badge,
+.card,
+.accordion-button,
+.nav-link,
+[role="button"] {
+    cursor: pointer !important;
+}
+
+/* Event card hover elevation */
+.layer-item:hover,
+.glass-panel:hover {
+    border-color: rgba(0, 229, 255, 0.45) !important;
+    transition: all 0.15s ease-in-out;
+}
+
+.offcanvas-body .glass-panel:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 229, 255, 0.12);
+}
+
+/* Video live pulse animation */
+.pulse-dot {
+    animation: livePulse 1.2s infinite;
+}
+
+@keyframes livePulse {
+    0% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.3; transform: scale(0.85); }
+    100% { opacity: 1; transform: scale(1); }
+}

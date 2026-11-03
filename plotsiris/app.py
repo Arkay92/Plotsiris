@@ -44,6 +44,10 @@ def create_app(
         suppress_callback_exceptions=True,
     )
 
+    # Register plotly component suite package path so dcc.Graph can load plotly.min.js without 500 error
+    app.registered_paths["plotly"].add("package_data/plotly.min.js")
+    app.registered_paths["plotly"].add("package_data/plotly.min.js.map")
+
     app.layout = create_layout()
     register_callbacks(app)
 

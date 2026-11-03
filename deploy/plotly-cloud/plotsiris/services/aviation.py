@@ -88,51 +88,52 @@ class AviationService:
         self._cached_entities = entities
         self._cached_routes = routes
 
-    def fetch_flights(self) -> tuple[List[GeoEntity], List[RoutePath]]:
+    def fetch_flights(self, use_network: bool = True) -> tuple[List[GeoEntity], List[RoutePath]]:
         """Fetch live ADS-B flights or return enriched cache."""
-        try:
-            # Attempt OpenSky Anonymous State API
-            url = "https://opensky-network.org/api/states/all"
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
-            if resp.status_code == 200:
-                data = resp.json()
-                states = data.get("states", [])
-                if states and len(states) > 0:
-                    live_entities = []
-                    # Sample top 80 flights evenly distributed
-                    step = max(1, len(states) // 80)
-                    for idx, s in enumerate(states[::step]):
-                        callsign = (s[1] or "").strip() or f"ICAO_{s[0]}"
-                        lon = s[5]
-                        lat = s[6]
-                        alt = s[7] or s[13] or 8000
-                        spd = s[9] or 400
-                        hdg = s[10] or 0
+        if use_network:
+            try:
+                # Attempt OpenSky Anonymous State API
+                url = "https://opensky-network.org/api/states/all"
+                resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    states = data.get("states", [])
+                    if states and len(states) > 0:
+                        live_entities = []
+                        # Sample top 80 flights evenly distributed
+                        step = max(1, len(states) // 80)
+                        for idx, s in enumerate(states[::step]):
+                            callsign = (s[1] or "").strip() or f"ICAO_{s[0]}"
+                            lon = s[5]
+                            lat = s[6]
+                            alt = s[7] or s[13] or 8000
+                            spd = s[9] or 400
+                            hdg = s[10] or 0
 
-                        if lat is not None and lon is not None:
-                            live_entities.append(GeoEntity(
-                                id=f"sky_{s[0]}",
-                                lat=float(lat),
-                                lon=float(lon),
-                                category="aviation",
-                                subcategory="Civil Airway",
-                                title=callsign,
-                                description=f"Altitude: {int(alt)}m | Velocity: {int(spd)}kts | Track: {int(hdg)}°",
-                                severity="INFO",
-                                color="#38bdf8",
-                                icon="airplane",
-                                size=8,
-                                heading=float(hdg),
-                                altitude_m=float(alt),
-                                speed_knots=float(spd),
-                                properties={"icao24": s[0], "callsign": callsign}
-                            ))
-                    if live_entities:
-                        # Retain military recon flights and combine
-                        recon_flights = [e for e in self._cached_entities if e.properties.get("is_military")]
-                        return recon_flights + live_entities, self._cached_routes
-        except Exception as e:
-            logger.debug(f"OpenSky live fetch skipped/offline: {e}")
+                            if lat is not None and lon is not None:
+                                live_entities.append(GeoEntity(
+                                    id=f"sky_{s[0]}",
+                                    lat=float(lat),
+                                    lon=float(lon),
+                                    category="aviation",
+                                    subcategory="Civil Airway",
+                                    title=callsign,
+                                    description=f"Altitude: {int(alt)}m | Velocity: {int(spd)}kts | Track: {int(hdg)}°",
+                                    severity="INFO",
+                                    color="#38bdf8",
+                                    icon="airplane",
+                                    size=8,
+                                    heading=float(hdg),
+                                    altitude_m=float(alt),
+                                    speed_knots=float(spd),
+                                    properties={"icao24": s[0], "callsign": callsign}
+                                ))
+                        if live_entities:
+                            # Retain military recon flights and combine
+                            recon_flights = [e for e in self._cached_entities if e.properties.get("is_military")]
+                            return recon_flights + live_entities, self._cached_routes
+            except Exception as e:
+                logger.debug(f"OpenSky live fetch skipped/offline: {e}")
 
         # If live fetch times out or rate limits, gently animate cached entities
         for entity in self._cached_entities:

@@ -148,6 +148,7 @@ class MapBuilder:
             "uirevision": "constant_camera"
         }
 
+        layout_kwargs["autosize"] = True
         if HAS_SCATTERMAP:
             layout_kwargs["map"] = map_config
         else:

@@ -15,6 +15,8 @@ def create_ai_panel() -> dbc.Offcanvas:
         ]),
         is_open=False,
         placement="end",
+        backdrop=False,
+        scrollable=True,
         className="offcanvas-custom",
         children=[
             html.P(

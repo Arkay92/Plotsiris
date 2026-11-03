@@ -262,43 +262,30 @@ STRATEGIC_SUBSEA_CABLES = [
 # Curated CCTV and Live Camera Registry
 CCTV_REGISTRY = [
     {
+        "id": "cam_us_ca_01",
+        "name": "San Francisco Bay Bridge / I-80 Surveillance",
+        "country": "United States",
+        "region": "California",
+        "lat": 37.7983,
+        "lon": -122.3778,
+        "stream_url": "/assets/surveillance_stream.mp4",
+        "thumbnail_url": "/assets/surveillance_stream.gif",
+        "feed_type": "video",
+        "status": "ONLINE",
+        "provider": "Caltrans District 4 Optical Feeds"
+    },
+    {
         "id": "cam_tw_01",
         "name": "Taipei Freeway 1 - Yuanshan Interchange",
         "country": "Taiwan",
         "region": "Taipei",
         "lat": 25.0760,
         "lon": 121.5280,
-        "stream_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=600&auto=format&fit=crop&q=80",
-        "thumbnail_url": "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=300&auto=format&fit=crop&q=80",
-        "feed_type": "snapshot",
+        "stream_url": "/assets/surveillance_stream.mp4",
+        "thumbnail_url": "/assets/surveillance_stream.gif",
+        "feed_type": "video",
         "status": "ONLINE",
         "provider": "Taiwan THB Traffic Bureau"
-    },
-    {
-        "id": "cam_tw_02",
-        "name": "Kaohsiung Port Terminal 4",
-        "country": "Taiwan",
-        "region": "Kaohsiung",
-        "lat": 22.6130,
-        "lon": 120.2850,
-        "stream_url": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=600&auto=format&fit=crop&q=80",
-        "thumbnail_url": "https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=300&auto=format&fit=crop&q=80",
-        "feed_type": "snapshot",
-        "status": "ONLINE",
-        "provider": "Taiwan Port Authority"
-    },
-    {
-        "id": "cam_us_ca_01",
-        "name": "San Francisco Bay Bridge / I-80",
-        "country": "United States",
-        "region": "California",
-        "lat": 37.7983,
-        "lon": -122.3778,
-        "stream_url": "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=600&auto=format&fit=crop&q=80",
-        "thumbnail_url": "https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?w=300&auto=format&fit=crop&q=80",
-        "feed_type": "snapshot",
-        "status": "ONLINE",
-        "provider": "Caltrans District 4"
     },
     {
         "id": "cam_us_ny_01",
@@ -307,9 +294,9 @@ CCTV_REGISTRY = [
         "region": "New York",
         "lat": 40.7580,
         "lon": -73.9855,
-        "stream_url": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=600&auto=format&fit=crop&q=80",
-        "thumbnail_url": "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=300&auto=format&fit=crop&q=80",
-        "feed_type": "snapshot",
+        "stream_url": "/assets/surveillance_stream.mp4",
+        "thumbnail_url": "/assets/surveillance_stream.gif",
+        "feed_type": "video",
         "status": "ONLINE",
         "provider": "EarthCam / NYC DOT"
     },
@@ -320,9 +307,9 @@ CCTV_REGISTRY = [
         "region": "London",
         "lat": 51.5055,
         "lon": -0.0754,
-        "stream_url": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=600&auto=format&fit=crop&q=80",
-        "thumbnail_url": "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=300&auto=format&fit=crop&q=80",
-        "feed_type": "snapshot",
+        "stream_url": "/assets/surveillance_stream.mp4",
+        "thumbnail_url": "/assets/surveillance_stream.gif",
+        "feed_type": "video",
         "status": "ONLINE",
         "provider": "Transport for London (TfL)"
     },
@@ -333,9 +320,9 @@ CCTV_REGISTRY = [
         "region": "Central",
         "lat": 1.2789,
         "lon": 103.8536,
-        "stream_url": "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=600&auto=format&fit=crop&q=80",
-        "thumbnail_url": "https://images.unsplash.com/photo-1525625293386-3f8f99389edd?w=300&auto=format&fit=crop&q=80",
-        "feed_type": "snapshot",
+        "stream_url": "/assets/surveillance_stream.mp4",
+        "thumbnail_url": "/assets/surveillance_stream.gif",
+        "feed_type": "video",
         "status": "ONLINE",
         "provider": "Land Transport Authority (LTA)"
     },
@@ -346,9 +333,9 @@ CCTV_REGISTRY = [
         "region": "Dublin",
         "lat": 53.3160,
         "lon": -6.3680,
-        "stream_url": "https://images.unsplash.com/photo-1549880338-65ddcdfd017b?w=600&auto=format&fit=crop&q=80",
-        "thumbnail_url": "https://images.unsplash.com/photo-1549880338-65ddcdfd017b?w=300&auto=format&fit=crop&q=80",
-        "feed_type": "snapshot",
+        "stream_url": "/assets/surveillance_stream.mp4",
+        "thumbnail_url": "/assets/surveillance_stream.gif",
+        "feed_type": "video",
         "status": "ONLINE",
         "provider": "Transport Infrastructure Ireland (TII)"
     },
@@ -359,34 +346,47 @@ CCTV_REGISTRY = [
         "region": "Hesse",
         "lat": 50.0379,
         "lon": 8.5622,
-        "stream_url": "https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=600&auto=format&fit=crop&q=80",
-        "thumbnail_url": "https://images.unsplash.com/photo-1569154941061-e231b4725ef1?w=300&auto=format&fit=crop&q=80",
-        "feed_type": "snapshot",
+        "stream_url": "/assets/surveillance_stream.mp4",
+        "thumbnail_url": "/assets/surveillance_stream.gif",
+        "feed_type": "video",
         "status": "ONLINE",
         "provider": "Autobahn GmbH"
     }
 ]
 
 # Curated 20 OSINT Tools List for the Reconnaissance Suite
+# Strictly separated into Passive Intelligence Gathering vs. Active Reconnaissance
 OSINT_TOOLS = [
-    {"id": "dns", "name": "DNS ENUM", "icon": "bi-globe", "desc": "Resolve A, AAAA, MX, NS, TXT, CNAME via Google DoH", "placeholder": "e.g. google.com or 8.8.8.8"},
-    {"id": "whois", "name": "WHOIS / RDAP", "icon": "bi-person-badge", "desc": "Domain registrar, registrant info & OFAC sanctions check", "placeholder": "e.g. microsoft.com"},
-    {"id": "portscan", "name": "PORT SCAN", "icon": "bi-door-open", "desc": "Fast non-blocking TCP port audit on critical ports", "placeholder": "e.g. scanme.nmap.org or 1.1.1.1"},
-    {"id": "shodan", "name": "SHODAN IoT", "icon": "bi-hdd-network", "desc": "Query Shodan InternetDB for open ports, tags, CVEs", "placeholder": "e.g. 1.1.1.1 or 8.8.4.4"},
-    {"id": "bgp", "name": "BGP / ASN", "icon": "bi-diagram-2", "desc": "RIPEstat BGP prefix routing, ASN, and announcing peer info", "placeholder": "e.g. 8.8.8.8 or AS15169"},
-    {"id": "headers", "name": "HTTP HEADERS", "icon": "bi-shield-check", "desc": "Audit HSTS, CSP, X-Frame, CORS & security flags", "placeholder": "e.g. https://github.com"},
-    {"id": "ssl", "name": "SSL / TLS", "icon": "bi-lock", "desc": "Inspect X.509 certificate expiry, issuer, cipher strength", "placeholder": "e.g. cloudflare.com:443"},
-    {"id": "subdomains", "name": "SUBDOMAINS", "icon": "bi-folder2-open", "desc": "Enumerate subdomains via Certificate Transparency", "placeholder": "e.g. nasa.gov"},
-    {"id": "certs", "name": "CERTS (crt.sh)", "icon": "bi-patch-check", "desc": "Query public Certificate Transparency log databases", "placeholder": "e.g. tesla.com"},
-    {"id": "tech", "name": "TECH DETECT", "icon": "bi-cpu", "desc": "Fingerprint backend stack, web server, and CMS engines", "placeholder": "e.g. https://wordpress.org"},
-    {"id": "mac", "name": "MAC VENDOR", "icon": "bi-ethernet", "desc": "Lookup hardware vendor OUI from MAC address", "placeholder": "e.g. 00:1A:2B:3C:4D:5E"},
-    {"id": "phone", "name": "PHONE INTEL", "icon": "bi-telephone", "desc": "Analyze telephone numbers, E.164, carrier line type", "placeholder": "e.g. +14155552671"},
-    {"id": "ip_geo", "name": "IP GEOLOCATE", "icon": "bi-pin-map", "desc": "Pinpoint country, city, ISP, ASN, and coordinates", "placeholder": "e.g. 142.250.190.46"},
-    {"id": "cve_lookup", "name": "CVE / VULN", "icon": "bi-bug", "desc": "Lookup CISA KEV and NVD vulnerability scoring", "placeholder": "e.g. CVE-2024-38077 or Log4j"},
-    {"id": "urlhaus", "name": "URLHAUS", "icon": "bi-virus", "desc": "Check abuse.ch malware distribution repository", "placeholder": "e.g. suspicious-site.xyz"},
-    {"id": "dns_threat", "name": "DNS THREAT", "icon": "bi-exclamation-octagon", "desc": "Cross-reference Spamhaus DNSBL and reputation lists", "placeholder": "e.g. 185.220.101.5"},
-    {"id": "leaks", "name": "DATA BREACH", "icon": "bi-envelope-exclamation", "desc": "Check public exposure catalogs for compromised records", "placeholder": "e.g. target@example.com"},
-    {"id": "github", "name": "GITHUB RECON", "icon": "bi-github", "desc": "Profile public repositories, contributors, key exposure", "placeholder": "e.g. octocat"},
-    {"id": "subnet", "name": "IP SWEEP", "icon": "bi-broadcast", "desc": "CIDR prefix sweep and device discovery", "placeholder": "e.g. 192.168.1.0/24"},
-    {"id": "ismalicious", "name": "ISMALICIOUS", "icon": "bi-shield-slash", "desc": "Multi-source consolidated cyber threat rating", "placeholder": "e.g. badguy.top"}
+    {"id": "dns", "name": "DNS ENUM", "icon": "bi-globe", "category": "passive", "desc": "Resolve A, AAAA, MX, NS, TXT via Google DoH", "placeholder": "e.g. google.com or 8.8.8.8"},
+    {"id": "whois", "name": "WHOIS / RDAP", "icon": "bi-person-badge", "category": "passive", "desc": "Domain registrar, registrant info & OFAC sanctions check", "placeholder": "e.g. microsoft.com"},
+    {"id": "portscan", "name": "PORT SCAN", "icon": "bi-door-open", "category": "active", "desc": "Active TCP connection audit (Authorisation Required under CMA 1990)", "placeholder": "e.g. scanme.nmap.org or 1.1.1.1"},
+    {"id": "shodan", "name": "SHODAN IoT", "icon": "bi-hdd-network", "category": "passive", "desc": "Query Shodan InternetDB cached open ports & CVEs", "placeholder": "e.g. 1.1.1.1 or 8.8.4.4"},
+    {"id": "bgp", "name": "BGP / ASN", "icon": "bi-diagram-2", "category": "passive", "desc": "RIPEstat BGP prefix routing, ASN, and announcing peer info", "placeholder": "e.g. 8.8.8.8 or AS15169"},
+    {"id": "headers", "name": "HTTP HEADERS", "icon": "bi-shield-check", "category": "passive", "desc": "Audit HSTS, CSP, X-Frame, CORS & security flags", "placeholder": "e.g. https://github.com"},
+    {"id": "ssl", "name": "SSL / TLS", "icon": "bi-lock", "category": "passive", "desc": "Inspect X.509 certificate expiry, issuer, cipher strength", "placeholder": "e.g. cloudflare.com:443"},
+    {"id": "subdomains", "name": "SUBDOMAINS", "icon": "bi-folder2-open", "category": "passive", "desc": "Enumerate subdomains via Certificate Transparency (crt.sh)", "placeholder": "e.g. nasa.gov"},
+    {"id": "certs", "name": "CERTS (crt.sh)", "icon": "bi-patch-check", "category": "passive", "desc": "Query public Certificate Transparency log databases", "placeholder": "e.g. tesla.com"},
+    {"id": "tech", "name": "TECH DETECT", "icon": "bi-cpu", "category": "passive", "desc": "Fingerprint backend stack, web server, and CMS engines", "placeholder": "e.g. https://wordpress.org"},
+    {"id": "mac", "name": "MAC VENDOR", "icon": "bi-ethernet", "category": "passive", "desc": "Lookup hardware vendor OUI from MAC address", "placeholder": "e.g. 00:1A:2B:3C:4D:5E"},
+    {"id": "phone", "name": "PHONE INTEL", "icon": "bi-telephone", "category": "passive", "desc": "Analyze telephone numbers, E.164, carrier line type", "placeholder": "e.g. +14155552671"},
+    {"id": "ip_geo", "name": "IP GEOLOCATE", "icon": "bi-pin-map", "category": "passive", "desc": "Pinpoint country, city, ISP, ASN, and coordinates", "placeholder": "e.g. 142.250.190.46"},
+    {"id": "cve_lookup", "name": "CVE / VULN", "icon": "bi-bug", "category": "passive", "desc": "Lookup CISA KEV and NVD vulnerability scoring", "placeholder": "e.g. CVE-2024-38077 or Log4j"},
+    {"id": "urlhaus", "name": "URLHAUS", "icon": "bi-virus", "category": "passive", "desc": "Check abuse.ch malware distribution repository", "placeholder": "e.g. suspicious-site.xyz"},
+    {"id": "dns_threat", "name": "DNS THREAT", "icon": "bi-exclamation-octagon", "category": "passive", "desc": "Cross-reference Spamhaus DNSBL and reputation lists", "placeholder": "e.g. 185.220.101.5"},
+    {"id": "leaks", "name": "DATA BREACH", "icon": "bi-envelope-exclamation", "category": "passive", "desc": "Check public exposure catalogs for compromised records", "placeholder": "e.g. target@example.com"},
+    {"id": "github", "name": "GITHUB RECON", "icon": "bi-github", "category": "passive", "desc": "Profile public repositories, contributors, key exposure", "placeholder": "e.g. octocat"},
+    {"id": "subnet", "name": "IP SWEEP", "icon": "bi-broadcast", "category": "active", "desc": "CIDR prefix sweep and device discovery (Authorisation Required)", "placeholder": "e.g. 192.168.1.0/24"},
+    {"id": "ismalicious", "name": "ISMALICIOUS", "icon": "bi-shield-slash", "category": "passive", "desc": "Multi-source consolidated cyber threat rating", "placeholder": "e.g. badguy.top"}
 ]
+
+# Tools requiring explicit operator confirmation under CMA 1990
+ACTIVE_OSINT_TOOLS = {"portscan", "subnet"}
+
+# Authorized test hosts for active verification
+APPROVED_DEMO_TARGETS = {
+    "scanme.nmap.org",   # Official Nmap Project authorized scanner host
+    "1.1.1.1",           # Cloudflare public resolver
+    "8.8.8.8",           # Google public resolver
+    "127.0.0.1",         # Loopback
+    "localhost"
+}

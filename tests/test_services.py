@@ -45,6 +45,24 @@ def test_osint_toolkit_portscan():
     assert "open_ports" in res.details
 
 
+def test_osint_authorization_gate():
+    toolkit = OsintToolkit()
+    # 1. Unapproved target without authorization -> blocked under CMA 1990
+    blocked_res = toolkit.run_tool("portscan", "unauthorized-target.org", is_authorized=False)
+    assert blocked_res.status == "BLOCKED"
+    assert "Computer Misuse Act 1990" in blocked_res.summary
+    assert "10.5281/zenodo.23924318" in blocked_res.summary
+
+    # 2. Approved demo target (scanme.nmap.org) -> allowed
+    demo_res = toolkit.run_tool("portscan", "scanme.nmap.org", is_authorized=False)
+    assert demo_res.status in ("SUCCESS", "WARNING", "ERROR")  # passes authorization check
+
+    # 3. Passive tool (dns) -> allowed without authorization gate
+    passive_res = toolkit.run_tool("dns", "google.com", is_authorized=False)
+    assert passive_res.status in ("SUCCESS", "WARNING")
+    assert passive_res.status != "BLOCKED"
+
+
 def test_osint_toolkit_mac():
     toolkit = OsintToolkit()
     res = toolkit.run_tool("mac", "B8:27:EB:00:00:00")

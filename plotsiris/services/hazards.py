@@ -42,57 +42,58 @@ BASELINE_WEATHER = [
 class HazardsService:
     """Provides real-time seismic, thermal wildfire, and atmospheric storm intelligence."""
 
-    def fetch_earthquakes(self) -> List[GeoEntity]:
+    def fetch_earthquakes(self, use_network: bool = True) -> List[GeoEntity]:
         """Fetch live USGS earthquakes or fallback to baseline."""
-        try:
-            url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson"
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
-            if resp.status_code == 200:
-                data = resp.json()
-                features = data.get("features", [])
-                entities = []
-                for feat in features[:60]:
-                    props = feat.get("properties", {})
-                    geom = feat.get("geometry", {})
-                    coords = geom.get("coordinates", [0, 0, 0])
-                    lon, lat, depth = coords[0], coords[1], coords[2]
-                    mag = props.get("mag", 0.0) or 0.0
-                    place = props.get("place", "Unknown Seismic Location")
+        if use_network:
+            try:
+                url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson"
+                resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    features = data.get("features", [])
+                    entities = []
+                    for feat in features[:60]:
+                        props = feat.get("properties", {})
+                        geom = feat.get("geometry", {})
+                        coords = geom.get("coordinates", [0, 0, 0])
+                        lon, lat, depth = coords[0], coords[1], coords[2]
+                        mag = props.get("mag", 0.0) or 0.0
+                        place = props.get("place", "Unknown Seismic Location")
 
-                    # Severity mapping
-                    if mag >= 6.0:
-                        sev, color, size = "CRITICAL", "#b91c1c", 16
-                    elif mag >= 5.0:
-                        sev, color, size = "HIGH", "#ef4444", 13
-                    elif mag >= 4.0:
-                        sev, color, size = "ELEVATED", "#f97316", 10
-                    else:
-                        sev, color, size = "LOW", "#f59e0b", 7
+                        # Severity mapping
+                        if mag >= 6.0:
+                            sev, color, size = "CRITICAL", "#b91c1c", 16
+                        elif mag >= 5.0:
+                            sev, color, size = "HIGH", "#ef4444", 13
+                        elif mag >= 4.0:
+                            sev, color, size = "ELEVATED", "#f97316", 10
+                        else:
+                            sev, color, size = "LOW", "#f59e0b", 7
 
-                    entities.append(GeoEntity(
-                        id=f"usgs_{feat.get('id', feat.get('properties', {}).get('code', 'eq'))}",
-                        lat=float(lat),
-                        lon=float(lon),
-                        category="earthquakes",
-                        subcategory=f"M{mag:.1f} Earthquake",
-                        title=f"M{mag:.1f} - {place}",
-                        description=f"Magnitude: {mag:.1f} | Depth: {depth:.1f} km | Region: {place}",
-                        severity=sev,
-                        color=color,
-                        icon="circle",
-                        size=size,
-                        properties={
-                            "mag": mag,
-                            "depth_km": depth,
-                            "place": place,
-                            "url": props.get("url", ""),
-                            "ts": props.get("time")
-                        }
-                    ))
-                if entities:
-                    return entities
-        except Exception as e:
-            logger.debug(f"USGS live earthquake fetch skipped: {e}")
+                        entities.append(GeoEntity(
+                            id=f"usgs_{feat.get('id', feat.get('properties', {}).get('code', 'eq'))}",
+                            lat=float(lat),
+                            lon=float(lon),
+                            category="earthquakes",
+                            subcategory=f"M{mag:.1f} Earthquake",
+                            title=f"M{mag:.1f} - {place}",
+                            description=f"Magnitude: {mag:.1f} | Depth: {depth:.1f} km | Region: {place}",
+                            severity=sev,
+                            color=color,
+                            icon="circle",
+                            size=size,
+                            properties={
+                                "mag": mag,
+                                "depth_km": depth,
+                                "place": place,
+                                "url": props.get("url", ""),
+                                "ts": props.get("time")
+                            }
+                        ))
+                    if entities:
+                        return entities
+            except Exception as e:
+                logger.debug(f"USGS live earthquake fetch skipped: {e}")
 
         # Baseline fallback
         baseline_entities = []

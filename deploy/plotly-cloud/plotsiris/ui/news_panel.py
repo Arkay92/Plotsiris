@@ -40,6 +40,8 @@ def create_news_panel(alerts: List[NewsAlert]) -> dbc.Offcanvas:
         ]),
         is_open=False,
         placement="end",
+        backdrop=False,
+        scrollable=True,
         className="offcanvas-custom",
         children=[
             html.P("Live machine-scored geopolitical events, kinetic skirmishes, and tactical cyber incidents.", className="text-muted small mb-3"),

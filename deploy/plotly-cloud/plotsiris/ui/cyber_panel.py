@@ -56,6 +56,8 @@ def create_cyber_panel(cisa_vulns: List[Dict[str, Any]], recon_findings: List[Ge
         ]),
         is_open=False,
         placement="end",
+        backdrop=False,
+        scrollable=True,
         className="offcanvas-custom",
         children=[
             dbc.Tabs([

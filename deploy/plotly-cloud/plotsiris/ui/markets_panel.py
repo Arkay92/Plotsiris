@@ -57,6 +57,8 @@ def create_markets_panel(tickers: List[MarketTicker], risks: List[Dict[str, Any]
         ]),
         is_open=False,
         placement="end",
+        backdrop=False,
+        scrollable=True,
         className="offcanvas-custom",
         children=[
             dbc.Tabs([

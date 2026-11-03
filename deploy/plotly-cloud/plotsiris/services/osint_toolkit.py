@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class OsintToolkit:
     """Comprehensive OSINT reconnaissance engine."""
 
-    def run_tool(self, tool_id: str, target: str) -> OsintResult:
+    def run_tool(self, tool_id: str, target: str, is_authorized: bool = True) -> OsintResult:
         """Dispatch requested OSINT reconnaissance tool against target."""
         target = target.strip()
         if not target:
@@ -30,6 +30,27 @@ class OsintToolkit:
                 status="ERROR",
                 verdict="UNKNOWN",
                 summary="Target cannot be empty. Please specify an IP, domain, or identifier."
+            )
+
+        from plotsiris.domain.constants import ACTIVE_OSINT_TOOLS, APPROVED_DEMO_TARGETS
+        target_clean = target.replace("https://", "").replace("http://", "").split("/")[0].split(":")[0]
+
+        if tool_id in ACTIVE_OSINT_TOOLS and not is_authorized and target_clean not in APPROVED_DEMO_TARGETS:
+            return OsintResult(
+                tool=tool_id,
+                target=target,
+                status="BLOCKED",
+                verdict="SUSPICIOUS",
+                summary=(
+                    f"Active reconnaissance tool '{tool_id}' blocked. "
+                    "Under the Computer Misuse Act 1990, connection attempts require explicit operator authorization. "
+                    "'The line between intelligence and intrusion is an authorisation boundary, not a capability one' (DOI: 10.5281/zenodo.23924318)."
+                ),
+                details={
+                    "policy": "Computer Misuse Act 1990 Compliance",
+                    "citation": "Red Specter Security Research (DOI: 10.5281/zenodo.23924318)",
+                    "status": "Authorisation confirmation required"
+                }
             )
 
         handler = getattr(self, f"_tool_{tool_id}", None)

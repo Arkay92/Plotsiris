@@ -8,26 +8,32 @@ from plotsiris.domain.constants import OSINT_TOOLS
 def create_osint_panel() -> dbc.Offcanvas:
     """Create sliding offcanvas drawer for 20-tool OSINT reconnaissance."""
     tool_options = [
-        {"label": f"{t['name']} — {t['desc']}", "value": t["id"]}
+        {
+            "label": f"[{t.get('category', 'passive').upper()}] {t['name']} — {t['desc']}",
+            "value": t["id"]
+        }
         for t in OSINT_TOOLS
     ]
 
     return dbc.Offcanvas(
         id="osint-offcanvas",
         title=html.Div([
-            html.I(className="bi bi-search me-2 text-info"),
-            html.Span("OSINT RECONNAISSANCE SUITE", style={"fontWeight": "700", "letterSpacing": "1.5px"})
+            html.I(className="bi bi-shield-check me-2 text-info"),
+            html.Span("OSINT RECONNAISSANCE SUITE", style={"fontWeight": "700", "letterSpacing": "1.5px"}),
+            dbc.Badge("CMA 1990 SCOPED", color="secondary", className="ms-2", style={"fontSize": "0.62rem"})
         ]),
         is_open=False,
         placement="end",
+        backdrop=False,
+        scrollable=True,
         className="offcanvas-custom",
         children=[
             html.P(
-                "Execute active reconnaissance, network profiling, vulnerability auditing, and threat intelligence lookups across 20 specialized engines.",
-                className="text-muted small mb-3"
+                "Multi-engine reconnaissance with strict separation between passive directory intelligence and gated active connection probing.",
+                className="text-muted small mb-2"
             ),
             # Tool Selector
-            html.Div(className="mb-3", children=[
+            html.Div(className="mb-2", children=[
                 html.Label("SELECT RECON ENGINE", className="small text-info fw-bold mb-1"),
                 dcc.Dropdown(
                     id="osint-tool-select",
@@ -37,18 +43,20 @@ def create_osint_panel() -> dbc.Offcanvas:
                     className="text-dark small"
                 )
             ]),
+            # Scoping & Authorisation Boundary Alert (Dynamic via Callback)
+            html.Div(id="osint-auth-gate-container", className="mb-2"),
             # Target Input
-            html.Div(className="mb-3", children=[
+            html.Div(className="mb-2", children=[
                 html.Label("TARGET (HOST / DOMAIN / IP / IDENTIFIER)", className="small text-info fw-bold mb-1"),
                 dbc.InputGroup([
                     dbc.Input(
                         id="osint-target-input",
-                        placeholder="e.g. google.com or 1.1.1.1",
+                        placeholder="e.g. google.com or scanme.nmap.org",
                         type="text",
                         className="bg-dark text-white border-secondary small"
                     ),
                     dbc.Button(
-                        [html.I(className="bi bi-play-fill me-1"), "SCAN"],
+                        [html.I(className="bi bi-play-fill me-1"), "EXECUTE"],
                         id="btn-run-osint",
                         color="info",
                         className="fw-bold px-3"
@@ -56,21 +64,37 @@ def create_osint_panel() -> dbc.Offcanvas:
                 ])
             ]),
             # Quick Target Presets
-            html.Div(className="mb-3", children=[
+            html.Div(className="mb-2", children=[
                 html.Span("QUICK TARGETS: ", className="text-muted", style={"fontSize": "0.7rem"}),
                 dbc.ButtonGroup([
                     dbc.Button("google.com", id="btn-target-google", size="sm", color="secondary", outline=True, className="py-0 px-2", style={"fontSize": "0.7rem"}),
+                    dbc.Button("scanme.nmap.org", id="btn-target-nmap", size="sm", color="success", outline=True, className="py-0 px-2", style={"fontSize": "0.7rem"}),
                     dbc.Button("1.1.1.1", id="btn-target-cloudflare", size="sm", color="secondary", outline=True, className="py-0 px-2", style={"fontSize": "0.7rem"}),
                     dbc.Button("185.220.101.5", id="btn-target-tor", size="sm", color="secondary", outline=True, className="py-0 px-2", style={"fontSize": "0.7rem"}),
                     dbc.Button("CVE-2024-38077", id="btn-target-cve", size="sm", color="secondary", outline=True, className="py-0 px-2", style={"fontSize": "0.7rem"})
                 ], size="sm")
             ]),
+            # Legal & Research Attribution Note
+            html.Div(
+                className="p-2 mb-2 rounded bg-black bg-opacity-50 border border-secondary border-opacity-25",
+                children=[
+                    html.Small([
+                        html.I(className="bi bi-shield-lock-fill text-warning me-1"),
+                        html.Strong("Authorisation Boundary: ", className="text-warning"),
+                        html.Span("Active tools require explicit authorization confirmation under the Computer Misuse Act 1990. ", className="text-muted"),
+                        html.Em('"The line between intelligence and intrusion is an authorisation boundary, not a capability one." ', className="text-light"),
+                        html.Span("— Red Specter Security Research (", className="text-muted"),
+                        html.A("DOI: 10.5281/zenodo.23924318", href="https://doi.org/10.5281/zenodo.23924318", target="_blank", className="text-info text-decoration-none"),
+                        html.Span(")", className="text-muted")
+                    ], style={"fontSize": "0.68rem"})
+                ]
+            ),
             # Execution Spinner & Results Container
             dcc.Loading(
                 id="osint-loading",
                 type="dot",
                 color="#00e5ff",
-                children=html.Div(id="osint-results-container", className="mt-3")
+                children=html.Div(id="osint-results-container", className="mt-2")
             )
         ]
     )

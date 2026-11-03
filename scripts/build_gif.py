@@ -1,4 +1,4 @@
-"""Choreographed Walkthrough GIF Generator for Plotsiris using standalone process."""
+"""Choreographed Walkthrough GIF Generator for Plotsiris with WebGL MapLibre enabled."""
 
 from __future__ import annotations
 
@@ -45,11 +45,19 @@ def add_banner(image: Image.Image, title: str, subtitle: str) -> Image.Image:
 
 def record(page, title: str, subtitle: str, frames: list, repeat: int = 1):
     from io import BytesIO
-    shot = page.screenshot()
+    try:
+        shot = page.screenshot(timeout=20000)
+    except Exception as e:
+        print(f"Notice on screenshot: {e}")
+        try:
+            shot = page.screenshot(timeout=25000)
+        except Exception as e2:
+            print(f"Fallback screenshot error: {e2}")
+            return
     img = Image.open(BytesIO(shot)).resize((1152, 648), Image.Resampling.LANCZOS)
     framed = add_banner(img, title, subtitle)
     for _ in range(repeat):
-        frames.append(framed)
+        frames.append(framed.copy())
 
 def main():
     print(f"[*] Starting background Plotsiris server on port {LOCAL_PORT}...")
@@ -64,21 +72,59 @@ def main():
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL
     )
-    time.sleep(5)
+    
+    # Wait until server is listening on LOCAL_PORT
+    start_t = time.time()
+    server_ready = False
+    while time.time() - start_t < 15:
+        if proc.poll() is not None:
+            out, err = proc.communicate()
+            print(f"[ERROR] app.py exited prematurely with code {proc.returncode}:\n{err}\n{out}")
+            return
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.settimeout(0.5)
+                if s.connect_ex(('127.0.0.1', LOCAL_PORT)) == 0:
+                    server_ready = True
+                    break
+        except Exception:
+            pass
+        time.sleep(0.5)
+
+    if not server_ready:
+        print(f"[ERROR] Server failed to bind to {LOCAL_PORT} within 15 seconds")
+        return
+    print(f"[*] Server listening on {LOCAL_PORT}!")
+    time.sleep(1)
 
     frames = []
     try:
         with sync_playwright() as p:
-            browser = p.chromium.launch(channel="msedge", headless=True)
+            # Enable WebGL and GPU acceleration in headless chromium so MapLibre vector map renders
+            browser = p.chromium.launch(
+                channel="msedge",
+                headless=True,
+                args=[
+                    "--enable-webgl",
+                    "--use-gl=angle",
+                    "--use-angle=swiftshader",
+                    "--ignore-gpu-blocklist",
+                    "--enable-unsafe-webgpu",
+                    "--ignore-certificate-errors",
+                    "--no-sandbox"
+                ]
+            )
             page = browser.new_page(viewport={"width": 1600, "height": 900})
+            page.on("pageerror", lambda err: print(f"PAGEERROR: {err}"))
             
             print("[*] Navigating to Plotsiris interface...")
-            page.goto(f"http://127.0.0.1:{LOCAL_PORT}/", timeout=30000)
-            page.wait_for_selector("#layer-rail-container", timeout=25000)
-            time.sleep(2)
+            page.goto(f"http://127.0.0.1:{LOCAL_PORT}/", timeout=60000)
+            page.wait_for_selector("#layer-rail-container", timeout=45000)
+            page.wait_for_selector("#main-map canvas", state="attached", timeout=45000)
+            time.sleep(5)  # Allow MapLibre WebGL vector tiles, roads, and layers to load cleanly
 
             # Scene 1: Global Multi-Domain Intelligence
-            print(" -> Scene 1: Multi-Domain Situational Awareness")
+            print(" -> Scene 1: Multi-Domain Situational Awareness (Map Loaded)")
             record(
                 page,
                 "01 // MULTI-DOMAIN SITUATIONAL AWARENESS",
@@ -87,21 +133,57 @@ def main():
                 repeat=3
             )
 
-            # Scene 2: 20-Tool Tactical OSINT Reconnaissance Suite
-            print(" -> Scene 2: OSINT Recon Suite")
+            # Scene 1b: Hover on event / point showing cursor pointer
+            print(" -> Scene 1b: Hovering on map event")
             try:
-                page.locator("#btn-open-osint").click()
-                page.wait_for_selector("#osint-offcanvas.show", timeout=15000)
+                page.mouse.move(780, 420)
+                time.sleep(2)
+            except Exception:
+                pass
+            record(
+                page,
+                "01 // INTERACTIVE TACTICAL HOVER",
+                "High-precision vector inspection with real-time coordinate telemetries and threat classifications",
+                frames,
+                repeat=2
+            )
+
+            # Scene 2: Live CCTV Surveillance Video Feed & Tactical HUD
+            print(" -> Scene 2: Live CCTV Surveillance Feed")
+            try:
+                page.click("#btn-open-cctv")
+                page.wait_for_selector("#camera-stream-img", timeout=12000)
+                time.sleep(2)
+            except Exception as e:
+                print(f"Notice on CCTV modal: {e}")
+            record(
+                page,
+                "02 // LIVE SURVEILLANCE FEED & OPTICAL HUD",
+                "Active H.264 video stream with live military HUD, NVG night vision, and FLIR thermal filters",
+                frames,
+                repeat=3
+            )
+            try:
+                page.click("#btn-close-camera-modal")
+            except Exception:
+                page.keyboard.press("Escape")
+            time.sleep(2)
+
+            # Scene 3: 20-Tool Tactical OSINT Reconnaissance Suite
+            print(" -> Scene 3: OSINT Recon Suite")
+            try:
+                page.click("#btn-open-osint")
+                page.wait_for_selector("#btn-run-osint", timeout=12000)
                 time.sleep(1)
-                page.locator("#btn-target-cloudflare").click()
+                page.click("#btn-target-cloudflare")
                 time.sleep(1)
-                page.locator("#btn-run-osint").click()
-                time.sleep(4)
+                page.click("#btn-run-osint")
+                time.sleep(3)
             except Exception as e:
                 print(f"Notice on OSINT run: {e}")
             record(
                 page,
-                "02 // 20-TOOL TACTICAL OSINT RECONNAISSANCE",
+                "03 // 20-TOOL TACTICAL OSINT RECONNAISSANCE",
                 "Automated reconnaissance: DNS, WHOIS, Port Scan, Subdomains, IP Geolocation & Threat Reputation",
                 frames,
                 repeat=3
@@ -109,119 +191,134 @@ def main():
 
             # Pin finding
             try:
-                page.locator("#btn-pin-recon-result").click()
+                page.click("#btn-pin-recon-result")
                 time.sleep(1)
             except Exception:
                 pass
             record(
                 page,
-                "02 // GEOSPATIAL THREAT PINNING",
+                "03 // GEOSPATIAL THREAT PINNING",
                 "Target intelligence finding mapped in real-time onto multi-domain tactical canvas",
                 frames,
                 repeat=2
             )
-            page.keyboard.press("Escape")
-            time.sleep(1)
-
-            # Scene 3: AI Intelligence Analyst (Gemini 2.5 Flash)
-            print(" -> Scene 3: AI Intelligence Analyst & SITREP")
             try:
-                page.locator("#btn-open-ai").click()
-                page.wait_for_selector("#ai-offcanvas.show", timeout=15000)
+                page.click("#osint-offcanvas .btn-close")
+            except Exception:
+                page.keyboard.press("Escape")
+            time.sleep(2)
+
+            # Scene 4: AI Intelligence Analyst (Gemini 2.5 Flash)
+            print(" -> Scene 4: AI Intelligence Analyst & SITREP")
+            try:
+                page.click("#btn-open-ai")
+                page.wait_for_selector("#btn-send-ai-query", timeout=12000)
                 time.sleep(1)
-                page.locator("#ai-prompt-input").fill("Assess multi-domain escalation in the Indo-Pacific and maritime choke points.")
-                page.locator("#btn-send-ai-prompt").click()
+                page.locator("#ai-query-input").fill("Assess multi-domain escalation in the Indo-Pacific and maritime choke points.")
+                page.click("#btn-send-ai-query")
                 time.sleep(3)
             except Exception as e:
                 print(f"Notice on AI prompt: {e}")
             record(
                 page,
-                "03 // AI INTELLIGENCE ANALYST (GEMINI 2.5 FLASH)",
+                "04 // AI INTELLIGENCE ANALYST (GEMINI 2.5 FLASH)",
                 "Natural language strategic synthesis and cross-domain intelligence fusion",
                 frames,
                 repeat=3
             )
 
-            # SITREP
+            # SITREP Briefing
             try:
-                page.locator("#btn-gen-sitrep").click()
+                page.click("#btn-generate-briefing")
                 time.sleep(3)
             except Exception as e:
                 print(f"Notice on SITREP: {e}")
             record(
                 page,
-                "03 // OPERATIONAL DEFCON COMMANDER SITREP",
+                "04 // OPERATIONAL DEFCON COMMANDER SITREP",
                 "Structured military briefing: Situation, Threat Vectors, Entity Correlation & Directives",
                 frames,
                 repeat=3
             )
-            page.keyboard.press("Escape")
-            time.sleep(1)
-
-            # Scene 4: Force-Directed Entity Relationship Graph
-            print(" -> Scene 4: Force-Directed Entity Relationship Graph")
             try:
-                page.locator("#btn-open-graph").click()
-                page.wait_for_selector(".modal.show", timeout=15000)
+                page.click("#ai-offcanvas .btn-close")
+            except Exception:
+                page.keyboard.press("Escape")
+            time.sleep(2)
+
+            # Scene 5: Force-Directed Entity Relationship Graph
+            print(" -> Scene 5: Force-Directed Entity Relationship Graph")
+            try:
+                page.click("#btn-open-graph")
+                page.wait_for_selector("#entity-graph-display", timeout=12000)
                 time.sleep(3)
             except Exception as e:
                 print(f"Notice on Graph modal: {e}")
             record(
                 page,
-                "04 // FORCE-DIRECTED ENTITY RELATIONSHIP GRAPH",
+                "05 // FORCE-DIRECTED ENTITY RELATIONSHIP GRAPH",
                 "NetworkX topological mapping correlating Threat Actors, Malware, CVEs, Targets & C2 Infrastructure",
                 frames,
-                repeat=4
+                repeat=3
             )
-            page.keyboard.press("Escape")
-            time.sleep(1)
-
-            # Scene 5: Cyber Threat Intel (CISA KEV)
-            print(" -> Scene 5: Cyber Threat Intel")
             try:
-                page.locator("#btn-open-cyber").click()
-                page.wait_for_selector("#cyber-offcanvas.show", timeout=15000)
+                page.click("#btn-close-graph-modal")
+            except Exception:
+                page.keyboard.press("Escape")
+            time.sleep(2)
+
+            # Scene 6: Cyber Threat Intel (CISA KEV)
+            print(" -> Scene 6: Cyber Threat Intel")
+            try:
+                page.click("#btn-open-cyber")
+                page.wait_for_selector("#tab-kev", timeout=12000)
                 time.sleep(2)
             except Exception as e:
                 print(f"Notice on Cyber drawer: {e}")
             record(
                 page,
-                "05 // CYBER THREAT INTEL & CISA KEV CATALOG",
+                "06 // CYBER THREAT INTEL & CISA KEV CATALOG",
                 "Known Exploited Vulnerabilities catalog with ransomware flags, CVSS scores, and threat status",
                 frames,
                 repeat=3
             )
-            page.keyboard.press("Escape")
-            time.sleep(1)
-
-            # Scene 6: Defense Equities & Sovereign Risk
-            print(" -> Scene 6: Defense Equities")
             try:
-                page.locator("#btn-open-markets").click()
-                page.wait_for_selector("#markets-offcanvas.show", timeout=15000)
+                page.click("#cyber-offcanvas .btn-close")
+            except Exception:
+                page.keyboard.press("Escape")
+            time.sleep(2)
+
+            # Scene 7: Defense Equities & Sovereign Risk
+            print(" -> Scene 7: Defense Equities")
+            try:
+                page.click("#btn-open-markets")
+                page.wait_for_selector("#tab-markets-tickers", timeout=12000)
                 time.sleep(2)
             except Exception as e:
                 print(f"Notice on Markets drawer: {e}")
             record(
                 page,
-                "06 // DEFENSE EQUITIES & SOVEREIGN RISK",
+                "07 // DEFENSE EQUITIES & SOVEREIGN RISK",
                 "Real-time defense prime stock tickers (LMT, RTX, GD), commodity movements, and geopolitical risk",
                 frames,
                 repeat=3
             )
-            page.keyboard.press("Escape")
-            time.sleep(1)
-
-            # Scene 7: Cartographic Core Light Theme
-            print(" -> Scene 7: Theme Switch")
             try:
-                page.locator("#btn-toggle-theme").click()
+                page.click("#markets-offcanvas .btn-close")
+            except Exception:
+                page.keyboard.press("Escape")
+            time.sleep(2)
+
+            # Scene 8: Cartographic Core Light Theme
+            print(" -> Scene 8: Theme Switch")
+            try:
+                page.click("#btn-toggle-theme")
                 time.sleep(3)
             except Exception as e:
                 print(f"Notice on Light theme: {e}")
             record(
                 page,
-                "07 // DUAL TACTICAL CARTOGRAPHY THEMES",
+                "08 // DUAL TACTICAL CARTOGRAPHY THEMES",
                 "Cartographic Core: Light tactical GIS mode with high-contrast situational vector rendering",
                 frames,
                 repeat=3
@@ -229,13 +326,20 @@ def main():
 
             # Back to Ghost Dark
             try:
-                page.locator("#btn-toggle-theme").click()
+                page.click("#btn-toggle-theme")
                 time.sleep(3)
             except Exception as e:
                 print(f"Notice on Dark theme: {e}")
             record(
                 page,
-                "07 // GHOST PROTOCOL COMMAND THEME",
+                "08 // GHOST PROTOCOL COMMAND THEME",
+                "Ghost Protocol: Ultra-dark military situational interface with glowing vectors & radar sweep",
+                frames,
+                repeat=3
+            )
+            record(
+                page,
+                "08 // GHOST PROTOCOL COMMAND THEME",
                 "Ghost Protocol: Ultra-dark military situational interface with glowing vectors & radar sweep",
                 frames,
                 repeat=3
@@ -255,8 +359,8 @@ def main():
         GIF_PATH,
         save_all=True,
         append_images=frames[1:],
-        optimize=True,
-        duration=950,
+        optimize=False,
+        duration=850,
         loop=0
     )
     

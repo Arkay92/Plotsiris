@@ -170,30 +170,31 @@ class CyberService:
             ))
         return entities
 
-    def fetch_cisa_kev(self) -> List[Dict[str, Any]]:
+    def fetch_cisa_kev(self, use_network: bool = True) -> List[Dict[str, Any]]:
         """Fetch live CISA KEV catalogue or fallback to baseline."""
-        try:
-            url = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
-            if resp.status_code == 200:
-                data = resp.json()
-                vulns = data.get("vulnerabilities", [])
-                if vulns:
-                    results = []
-                    for v in vulns[:20]:
-                        results.append({
-                            "cveID": v.get("cveID"),
-                            "vendorProject": v.get("vendorProject"),
-                            "product": v.get("product"),
-                            "vulnerabilityName": v.get("vulnerabilityName"),
-                            "dateAdded": v.get("dateAdded"),
-                            "shortDescription": v.get("shortDescription"),
-                            "requiredAction": v.get("requiredAction"),
-                            "cvss": 9.0,
-                            "severity": "CRITICAL"
-                        })
-                    return results
-        except Exception as e:
-            logger.debug(f"CISA KEV live fetch fallback: {e}")
+        if use_network:
+            try:
+                url = "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json"
+                resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    vulns = data.get("vulnerabilities", [])
+                    if vulns:
+                        results = []
+                        for v in vulns[:20]:
+                            results.append({
+                                "cveID": v.get("cveID"),
+                                "vendorProject": v.get("vendorProject"),
+                                "product": v.get("product"),
+                                "vulnerabilityName": v.get("vulnerabilityName"),
+                                "dateAdded": v.get("dateAdded"),
+                                "shortDescription": v.get("shortDescription"),
+                                "requiredAction": v.get("requiredAction"),
+                                "cvss": 9.0,
+                                "severity": "CRITICAL"
+                            })
+                        return results
+            except Exception as e:
+                logger.debug(f"CISA KEV live fetch fallback: {e}")
 
         return list(BASELINE_CISA_KEV)

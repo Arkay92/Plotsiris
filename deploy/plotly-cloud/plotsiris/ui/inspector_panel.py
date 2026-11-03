@@ -24,6 +24,7 @@ def create_inspector_card() -> html.Div:
                         dbc.Button(
                             html.I(className="bi bi-x-lg"),
                             id="btn-close-inspector",
+                            n_clicks=0,
                             size="sm",
                             color="link",
                             className="p-0 text-white text-decoration-none"
@@ -45,6 +46,7 @@ def create_inspector_card() -> html.Div:
                     dbc.Button(
                         [html.I(className="bi bi-cpu me-1"), "AI Assess"],
                         id="btn-inspector-ai",
+                        n_clicks=0,
                         color="info",
                         size="sm",
                         className="flex-fill fw-bold"
@@ -52,6 +54,7 @@ def create_inspector_card() -> html.Div:
                     dbc.Button(
                         [html.I(className="bi bi-search me-1"), "OSINT Recon"],
                         id="btn-inspector-osint",
+                        n_clicks=0,
                         color="secondary",
                         outline=True,
                         size="sm",
@@ -60,6 +63,7 @@ def create_inspector_card() -> html.Div:
                     dbc.Button(
                         [html.I(className="bi bi-camera-video me-1"), "View Stream"],
                         id="btn-inspector-camera",
+                        n_clicks=0,
                         color="success",
                         size="sm",
                         className="flex-fill fw-bold",

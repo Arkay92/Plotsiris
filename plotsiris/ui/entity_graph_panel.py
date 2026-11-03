@@ -47,6 +47,10 @@ def create_entity_graph_modal() -> dbc.Modal:
                         style={"height": "650px", "width": "100%"}
                     )
                 ]
+            ),
+            dbc.ModalFooter(
+                dbc.Button("Close Graph", id="btn-close-graph-modal", color="secondary", size="sm", type="button"),
+                className="bg-dark border-secondary p-2"
             )
         ]
     )
