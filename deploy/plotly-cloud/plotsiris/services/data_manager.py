@@ -23,6 +23,9 @@ from plotsiris.services.cctv import CctvService
 from plotsiris.services.markets import MarketsService
 from plotsiris.services.osint_toolkit import OsintToolkit
 from plotsiris.services.ai_analyst import AiAnalystService
+from plotsiris.services.nasa_eonet import NasaEonetService
+from plotsiris.services.reliefweb import ReliefWebService
+from plotsiris.services.threat_feeds import ThreatFeedsService
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +114,9 @@ class DataManager:
         self.markets_service = MarketsService()
         self.osint_toolkit = OsintToolkit()
         self.ai_analyst = AiAnalystService()
+        self.eonet_service = NasaEonetService()
+        self.reliefweb_service = ReliefWebService()
+        self.threat_feeds_service = ThreatFeedsService()
 
         # Cache of user-pinned OSINT recon results
         self._user_recon_findings: List[GeoEntity] = []
@@ -145,6 +151,9 @@ class DataManager:
                 nuclear = self.threats_service.fetch_nuclear()
                 cyber_nodes = self.cyber_service.fetch_cyber_nodes()
                 sats, orbits = self.space_weather_service.fetch_satellites()
+                eonet_events = self.eonet_service.fetch_events(use_network=live_network)
+                relief_disasters = self.reliefweb_service.fetch_disasters(use_network=live_network)
+                threat_nodes = self.threat_feeds_service.fetch_threat_nodes(use_network=live_network)
 
                 self._entities_by_layer = {
                     "aviation": flights,
@@ -158,6 +167,9 @@ class DataManager:
                     "nuclear": nuclear,
                     "cyber": cyber_nodes,
                     "satellites": sats,
+                    "eonet": eonet_events,
+                    "reliefweb": relief_disasters,
+                    "botnets": threat_nodes,
                 }
 
                 self._routes_by_layer = {
@@ -193,7 +205,7 @@ class DataManager:
             active_layers = [
                 "aviation", "maritime", "cctv", "earthquakes", "fires",
                 "weather", "conflict", "nuclear", "cyber", "satellites",
-                "chokepoints", "recon"
+                "chokepoints", "eonet", "reliefweb", "botnets", "recon"
             ]
 
         results: List[GeoEntity] = []

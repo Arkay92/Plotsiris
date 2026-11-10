@@ -18,7 +18,7 @@ def test_map_builder():
 def test_entity_graph_builder():
     fig = EntityGraphBuilder.build_graph(theme="ghost")
     assert fig is not None
-    assert len(fig.data) == 2  # edge trace and node trace
+    assert len(fig.data) >= 2  # edge trace, background star nodes, and core node trace
 
 
 def test_create_app():

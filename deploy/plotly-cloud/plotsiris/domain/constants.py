@@ -136,6 +136,33 @@ LAYER_DEFINITIONS = {
         "color": "#00e5ff",
         "default": True,
         "description": "Target IP/domain reconnaissance pins with verdict assessment color-coding."
+    },
+    "eonet": {
+        "id": "eonet",
+        "name": "NASA EONET Events",
+        "category": "hazards",
+        "icon": "bi bi-globe-americas",
+        "color": "#f97316",
+        "default": True,
+        "description": "NASA Earth Observatory live natural events: volcanoes, storms, and sea ice anomalies."
+    },
+    "reliefweb": {
+        "id": "reliefweb",
+        "name": "UN OCHA Disasters",
+        "category": "geopolitics",
+        "icon": "bi bi-exclamation-octagon-fill",
+        "color": "#dc2626",
+        "default": True,
+        "description": "United Nations OCHA global humanitarian crises, conflicts, and disaster situations."
+    },
+    "botnets": {
+        "id": "botnets",
+        "name": "Feodo C2 Botnets",
+        "category": "cyber",
+        "icon": "bi bi-shield-slash-fill",
+        "color": "#b91c1c",
+        "default": True,
+        "description": "Abuse.ch Feodo Tracker active banking trojan and botnet C2 infrastructure."
     }
 }
 

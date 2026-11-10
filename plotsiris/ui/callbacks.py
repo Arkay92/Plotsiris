@@ -537,5 +537,26 @@ def register_callbacks(app: Dash) -> None:
     )
     def toggle_theme(n_clicks, current_theme):
         new_theme = "core" if current_theme == "ghost" else "ghost"
-        theme_class = "theme-core position-relative vh-100 vw-100 overflow-hidden" if new_theme == "core" else "theme-ghost position-relative vh-100 vw-100 overflow-hidden"
+        theme_class = "theme-core position-relative w-100 min-vh-100 bg-white text-dark font-mono" if new_theme == "core" else "theme-ghost position-relative w-100 min-vh-100 bg-black text-light font-mono"
         return new_theme, theme_class
+
+    # 14. Tactical Canvas View Switcher (Constellation Graph vs MapLibre Map)
+    @app.callback(
+        Output("graph-display-container", "className"),
+        Output("map-display-container", "className"),
+        Output("btn-view-graph", "color"),
+        Output("btn-view-graph", "outline"),
+        Output("btn-view-map", "color"),
+        Output("btn-view-map", "outline"),
+        Output("active-view-mode-store", "data"),
+        Input("btn-view-graph", "n_clicks"),
+        Input("btn-view-map", "n_clicks"),
+        State("active-view-mode-store", "data"),
+        prevent_initial_call=True
+    )
+    def switch_canvas_view(n_graph, n_map, current_mode):
+        tid = callback_context.triggered_id
+        if tid == "btn-view-map":
+            return "w-100 h-100 d-none", "w-100 h-100", "secondary", True, "info", False, "map"
+        else:
+            return "w-100 h-100", "w-100 h-100 d-none", "info", False, "secondary", True, "graph"

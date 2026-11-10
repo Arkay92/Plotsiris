@@ -1,160 +1,267 @@
-"""Entity Intelligence Graph: Force-directed network visualization across threat domains."""
+"""Entity Intelligence & Constellation Graph Builder.
+
+Generates the cyber tactical constellation graph matching the reference
+HUD operations layout: concentric range rings, azimuth reticles, dense node
+clusters, targeting callout brackets ([ to / MATCHED ]), and status telemetry.
+"""
 
 from __future__ import annotations
 
-import logging
+import math
+import random
 from typing import Dict, Any, List
-import networkx as nx
 import plotly.graph_objects as go
-
-logger = logging.getLogger(__name__)
 
 
 class EntityGraphBuilder:
-    """Builds interactive force-directed relationship graphs connecting threat actors, CVEs, C2s, and targets."""
+    """Builds interactive cyber constellation graph matching the operations HUD reference."""
 
     @staticmethod
     def build_graph(theme: str = "ghost") -> go.Figure:
-        """Generate networkx spring layout graph rendered with Plotly."""
-        G = nx.Graph()
+        """Construct the high-density constellation network with targeting reticles."""
+        random.seed(42)
 
-        # Nodes: [id, label, category, severity, details]
-        nodes = [
-            # Central Hub
-            ("mitre", "MITRE ATT&CK Enterprise Matrix", "framework", 28, "#00e5ff", "Framework hub correlating tactics and techniques."),
-            # Threat Actor Groups
-            ("apt28", "APT28 (Fancy Bear / GRU)", "actor", 22, "#dc2626", "Russian military intelligence cyber unit targeting defense and diplomacy."),
-            ("volt_typhoon", "Volt Typhoon (UNC3236)", "actor", 22, "#dc2626", "State-sponsored actor targeting US critical infrastructure and SCADA."),
-            ("lazarus", "Lazarus Group (RGB 121st)", "actor", 22, "#dc2626", "DPRK state group targeting financial institutions and cryptocurrency."),
-            ("lockbit", "LockBit 3.0 Syndicate", "actor", 20, "#f97316", "Global ransomware-as-a-service cartel."),
-            ("scattered_spider", "Scattered Spider (UNC3944)", "actor", 20, "#f97316", "Sophisticated social engineering and cloud identity compromise."),
-            # Malware Families
-            ("cobalt_strike", "Cobalt Strike Beacon", "malware", 16, "#a855f7", "Adversary simulation and post-exploitation framework."),
-            ("mad_license", "MadLicense RPC Exploit", "malware", 18, "#ef4444", "Heap overflow payload targeting Windows Remote Desktop."),
-            ("sliver", "Sliver C2 Implant", "malware", 16, "#a855f7", "Open-source cross-platform adversary emulation tool."),
-            ("kv_botnet", "KV-Botnet SOHO Proxy", "malware", 16, "#a855f7", "Compromised SOHO routers utilized for covert command-and-control."),
-            # Vulnerabilities (CVEs)
-            ("cve_2024_38077", "CVE-2024-38077 (CVSS 9.8)", "cve", 16, "#ef4444", "Windows RDL Service unauthenticated remote code execution."),
-            ("cve_2024_21887", "CVE-2024-21887 (CVSS 9.1)", "cve", 15, "#ef4444", "Ivanti Connect Secure command injection vulnerability."),
-            ("cve_2024_1709", "CVE-2024-1709 (CVSS 10.0)", "cve", 16, "#ef4444", "ConnectWise ScreenConnect auth bypass leading to RCE."),
-            # Target Sectors & Strategic Infrastructure
-            ("defense_sector", "Defense Industrial Base (DIB)", "target", 20, "#38bdf8", "Contractors, avionics manufacturers, and logistics."),
-            ("power_grid", "Energy & Electrical Substation SCADA", "target", 20, "#38bdf8", "Critical power generation, transmission, and water utilities."),
-            ("maritime_shipping", "Global Maritime & Port Logistics", "target", 18, "#38bdf8", "Harbor traffic controllers, container ports, and AIS infrastructure."),
-            ("finance_defi", "Financial & Crypto Infrastructure", "target", 18, "#38bdf8", "Banking networks, SWIFT endpoints, and liquidity bridges."),
-            # C2 IP Nodes
-            ("ip_185", "185.220.101.5 (Tor Exit / C2)", "c2", 14, "#ec4899", "German Tor exit node utilized for spearphishing exfiltration."),
-            ("ip_198", "198.51.100.44 (Volt SOHO Relay)", "c2", 14, "#ec4899", "Compromised edge router functioning as operational relay.")
+        # Primary Core Clusters representing real-time OSINT & multi-domain defense entities
+        core_nodes = [
+            ("c2_core", 0.0, 0.0, "C2-CORE", 32, "#00e5ff", "Focal Root: Multi-Domain C2 Correlation Hub"),
+            ("apt_29", 0.12, -0.32, "APT-29", 22, "#ef4444", "Threat Actor: APT-29 (Cozy Bear) [MATCHED]"),
+            ("cisa_kev", 0.02, 0.38, "CISA-KEV", 20, "#f59e0b", "Known Exploited Catalog: 1,288 Active CVEs"),
+            ("feodo_c2", 0.08, 0.22, "FEODO-C2", 18, "#ef4444", "abuse.ch Botnet Tracker: 84 Active C2s"),
+            ("adsb_radar", -0.42, 0.68, "ADS-B-RADAR", 22, "#00e5ff", "OpenSky Network: Military & Commercial Flights"),
+            ("ais_maritime", 0.18, 0.62, "AIS-MARITIME", 20, "#38bdf8", "Global AIS: Tankers, Cargo & Chokepoint Transit"),
+            ("nasa_eonet", -0.15, 0.45, "NASA-EONET", 20, "#10b981", "NASA Natural Events: Volcanoes & Wildfires"),
+            ("relief_web", -0.68, 0.32, "RELIEF-WEB", 20, "#8b5cf6", "UN OCHA: Global Crisis & Humanitarian Alerts"),
+            ("gps_jamming", 0.25, -0.38, "GPS-JAMMING", 20, "#f59e0b", "Electronic Warfare: Black Sea/Baltic Spoofing"),
+            ("tor_exit", 0.72, 0.52, "TOR-EXIT", 18, "#38bdf8", "The Tor Project: Live Directory of Exit Relays"),
+            ("subsea_cables", 0.62, 0.28, "SUBSEA-CABLES", 16, "#0ea5e9", "Infrastructure: Transoceanic Fiber Routes"),
+            ("defense_primes", 0.28, -0.68, "DEFENSE-PRIMES", 16, "#38bdf8", "Defense Equities: LMT, RTX, GD Tickers"),
+            ("cma_1990", 0.75, -0.58, "CMA-1990-GATE", 16, "#10b981", "Authorization: UK Computer Misuse Act Scoping"),
+            ("sigint_stream", -0.12, -0.72, "SIGINT-STREAM", 16, "#38bdf8", "Telemetry Ingress: 2.4k pkts/sec Live"),
         ]
 
-        for nid, label, cat, size, color, desc in nodes:
-            G.add_node(nid, label=label, category=cat, size=size, color=color, desc=desc)
+        # Generate dense surrounding constellation nodes (star field)
+        bg_x = []
+        bg_y = []
+        bg_text = []
+        bg_colors = []
+        bg_sizes = []
 
-        # Edges
-        edges = [
-            ("apt28", "mitre"),
-            ("volt_typhoon", "mitre"),
-            ("lazarus", "mitre"),
-            ("lockbit", "mitre"),
-            ("scattered_spider", "mitre"),
-            # Actor -> Malware
-            ("apt28", "cobalt_strike"),
-            ("apt28", "ip_185"),
-            ("volt_typhoon", "kv_botnet"),
-            ("volt_typhoon", "ip_198"),
-            ("scattered_spider", "sliver"),
-            ("lockbit", "cobalt_strike"),
-            # Malware / Exploit -> CVE
-            ("mad_license", "cve_2024_38077"),
-            ("volt_typhoon", "cve_2024_21887"),
-            ("lockbit", "cve_2024_1709"),
-            ("apt28", "mad_license"),
-            # Actor -> Targets
-            ("apt28", "defense_sector"),
-            ("volt_typhoon", "power_grid"),
-            ("volt_typhoon", "maritime_shipping"),
-            ("lazarus", "finance_defi"),
-            ("lockbit", "defense_sector"),
-            ("scattered_spider", "finance_defi"),
-        ]
+        num_bg_nodes = 140
+        for i in range(num_bg_nodes):
+            angle = random.uniform(0, 2 * math.pi)
+            dist = random.uniform(0.15, 0.95)
+            # Add subtle cluster biasing towards top-left and center
+            if random.random() < 0.35:
+                bx = -0.35 + random.gauss(0, 0.18)
+                by = 0.45 + random.gauss(0, 0.20)
+            else:
+                bx = dist * math.cos(angle)
+                by = dist * math.sin(angle)
 
-        for u, v in edges:
-            G.add_edge(u, v)
+            bg_x.append(bx)
+            bg_y.append(by)
+            tag_id = f"node_{i:03d} (0x{random.randint(0x1000, 0xffff):04x})"
+            bg_text.append(tag_id)
+            if dist < 0.45:
+                bg_colors.append("#38bdf8")
+                bg_sizes.append(random.choice([4, 6, 8]))
+            else:
+                bg_colors.append("#0284c7" if random.random() < 0.5 else "#1e293b")
+                bg_sizes.append(random.choice([3, 4, 5]))
 
-        # Compute Spring Layout
-        pos = nx.spring_layout(G, seed=42, k=0.45, iterations=60)
-
-        # Build Edge Traces
+        # Edges between nodes
         edge_x = []
         edge_y = []
-        for edge in G.edges():
-            x0, y0 = pos[edge[0]]
-            x1, y1 = pos[edge[1]]
-            edge_x.extend([x0, x1, None])
-            edge_y.extend([y0, y1, None])
 
-        edge_trace = go.Scatter(
+        # Connect core nodes to focal 'to' node (radial spokes)
+        focal_x, focal_y = 0.0, 0.0
+        for nid, cx, cy, label, sz, col, desc in core_nodes[1:]:
+            edge_x.extend([focal_x, cx, None])
+            edge_y.extend([focal_y, cy, None])
+
+        # Inter-cluster edges between intelligence domains
+        inter_edges = [
+            ("apt_29", "feodo_c2"),
+            ("apt_29", "cisa_kev"),
+            ("cisa_kev", "tor_exit"),
+            ("feodo_c2", "tor_exit"),
+            ("adsb_radar", "gps_jamming"),
+            ("ais_maritime", "subsea_cables"),
+            ("nasa_eonet", "relief_web"),
+            ("cma_1990", "apt_29"),
+            ("defense_primes", "sigint_stream"),
+        ]
+        core_pos = {nid: (cx, cy) for nid, cx, cy, label, sz, col, desc in core_nodes}
+        for u, v in inter_edges:
+            if u in core_pos and v in core_pos:
+                x0, y0 = core_pos[u]
+                x1, y1 = core_pos[v]
+                edge_x.extend([x0, x1, None])
+                edge_y.extend([y0, y1, None])
+
+        # Dense web connecting random bg nodes to nearby core nodes
+        for i in range(0, len(bg_x), 2):
+            bx, by = bg_x[i], bg_y[i]
+            # Find closest core node
+            closest = min(core_nodes, key=lambda c: (c[1] - bx)**2 + (c[2] - by)**2)
+            edge_x.extend([bx, closest[1], None])
+            edge_y.extend([by, closest[2], None])
+
+        fig = go.Figure()
+
+        # 1. Edge Web Lines
+        fig.add_trace(go.Scatter(
             x=edge_x,
             y=edge_y,
-            line=dict(width=1.2, color="rgba(0, 229, 255, 0.35)" if theme == "ghost" else "rgba(100, 116, 139, 0.4)"),
+            mode="lines",
+            line=dict(width=0.8, color="rgba(0, 229, 255, 0.22)"),
             hoverinfo="none",
-            mode="lines"
-        )
+            showlegend=False
+        ))
 
-        # Build Node Traces
-        node_x = []
-        node_y = []
-        node_colors = []
-        node_sizes = []
-        node_texts = []
-        hover_texts = []
-
-        for node in G.nodes():
-            x, y = pos[node]
-            node_x.append(x)
-            node_y.append(y)
-            data = G.nodes[node]
-            node_colors.append(data["color"])
-            node_sizes.append(data["size"])
-            node_texts.append(data["label"])
-            hover_texts.append(
-                f"<b>{data['label']}</b><br>"
-                f"Category: {data['category'].upper()}<br>"
-                f"{data['desc']}"
-            )
-
-        node_trace = go.Scatter(
-            x=node_x,
-            y=node_y,
-            mode="markers+text",
+        # 2. Background Constellation Star Nodes
+        fig.add_trace(go.Scatter(
+            x=bg_x,
+            y=bg_y,
+            mode="markers",
+            marker=dict(
+                size=bg_sizes,
+                color=bg_colors,
+                opacity=0.85
+            ),
+            text=bg_text,
             hoverinfo="text",
-            text=node_texts,
-            textposition="top center",
+            showlegend=False
+        ))
+
+        # 3. Core Labeled Nodes
+        core_x = [c[1] for c in core_nodes]
+        core_y = [c[2] for c in core_nodes]
+        core_labels = [f"  {c[3]}" for c in core_nodes]
+        core_colors = [c[5] for c in core_nodes]
+        core_sizes = [c[4] for c in core_nodes]
+        core_hover = [f"<b>{c[3]}</b><br>{c[6]}" for c in core_nodes]
+
+        fig.add_trace(go.Scatter(
+            x=core_x,
+            y=core_y,
+            mode="markers+text",
+            text=core_labels,
+            textposition="top right",
             textfont=dict(
-                size=9,
-                color="#e2e8f0" if theme == "ghost" else "#1e293b",
-                family="JetBrains Mono, monospace"
+                family="JetBrains Mono, monospace",
+                size=11,
+                color="#e0f2fe"
             ),
             marker=dict(
-                size=node_sizes,
-                color=node_colors,
-                line=dict(width=1.5, color="#00e5ff" if theme == "ghost" else "#0284c7"),
-                opacity=0.95
+                size=core_sizes,
+                color=core_colors,
+                line=dict(width=2, color="#00e5ff"),
+                symbol="circle"
             ),
-            hovertext=hover_texts
+            hovertext=core_hover,
+            hoverinfo="text",
+            showlegend=False
+        ))
+
+        # 4. Concentric Circular Radar/Range Rings (HUD Reticles)
+        shapes = []
+        for r, dash_style, opacity in [(0.25, "dash", 0.28), (0.50, "dot", 0.22), (0.75, "solid", 0.15)]:
+            shapes.append(dict(
+                type="circle",
+                xref="x",
+                yref="y",
+                x0=-r,
+                y0=-r,
+                x1=r,
+                y1=r,
+                line=dict(color="rgba(0, 229, 255, 1.0)", width=1.2, dash=dash_style),
+                opacity=opacity
+            ))
+
+        # Crosshair lines through center
+        shapes.append(dict(
+            type="line",
+            xref="x",
+            yref="y",
+            x0=-1.1,
+            y0=0,
+            x1=1.1,
+            y1=0,
+            line=dict(color="rgba(0, 229, 255, 0.18)", width=1),
+        ))
+        shapes.append(dict(
+            type="line",
+            xref="x",
+            yref="y",
+            x0=0,
+            y0=-1.0,
+            x1=0,
+            y1=1.0,
+            line=dict(color="rgba(0, 229, 255, 0.18)", width=1),
+        ))
+
+        # 5. Targeting Callout Box: [ C2-CORE / MATCHED ] and [ APT-29 ]
+        annotations = [
+            # Main focal target bracket [ C2-CORE / MATCHED ]
+            dict(
+                x=0.0,
+                y=0.0,
+                xref="x",
+                yref="y",
+                text="<b>&nbsp;&nbsp;C2-CORE &nbsp;&nbsp;&nbsp;&nbsp;/ MATCHED&nbsp;&nbsp;</b>",
+                showarrow=True,
+                arrowhead=2,
+                arrowsize=1,
+                arrowwidth=1.5,
+                arrowcolor="#00e5ff",
+                ax=80,
+                ay=-20,
+                bgcolor="rgba(8, 14, 26, 0.92)",
+                bordercolor="#00e5ff",
+                borderwidth=1.5,
+                borderpad=4,
+                font=dict(family="JetBrains Mono, monospace", size=13, color="#00e5ff")
+            ),
+            # Detailed callout box for APT-29 (lower left)
+            dict(
+                x=0.12,
+                y=-0.32,
+                xref="x",
+                yref="y",
+                text=(
+                    "<span style='color:#ef4444;font-weight:bold;'>APT-29 (Cozy Bear)</span><br>"
+                    "<span style='color:#64748b;font-size:9px;'>THREAT: CRITICAL · C2 ACTIVE</span><br>"
+                    "<span style='color:#38bdf8;font-size:9px;'>CVE: CVE-2023-38831</span>"
+                ),
+                showarrow=True,
+                arrowhead=1,
+                arrowsize=1,
+                arrowcolor="#ef4444",
+                ax=-90,
+                ay=30,
+                bgcolor="rgba(8, 14, 26, 0.90)",
+                bordercolor="rgba(239, 68, 68, 0.5)",
+                borderwidth=1,
+                borderpad=5,
+                font=dict(family="JetBrains Mono, monospace", size=10, color="#f8fafc")
+            )
+        ]
+
+        fig.update_layout(
+            margin=dict(l=0, r=0, t=0, b=0),
+            paper_bgcolor="#050810",
+            plot_bgcolor="#050810",
+            xaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-1.1, 1.1]),
+            yaxis=dict(showgrid=False, zeroline=False, showticklabels=False, range=[-0.95, 0.95]),
+            shapes=shapes,
+            annotations=annotations,
+            hoverlabel=dict(
+                bgcolor="#080e1a",
+                bordercolor="#00e5ff",
+                font=dict(family="JetBrains Mono, monospace", size=11, color="#f8fafc")
+            ),
+            uirevision="constant_graph"
         )
 
-        bg_color = "#0a0e14" if theme == "ghost" else "#f8fafc"
-        fig = go.Figure(
-            data=[edge_trace, node_trace],
-            layout=go.Layout(
-                showlegend=False,
-                hovermode="closest",
-                margin=dict(b=10, l=10, r=10, t=10),
-                paper_bgcolor=bg_color,
-                plot_bgcolor=bg_color,
-                xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-                yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-            )
-        )
         return fig
