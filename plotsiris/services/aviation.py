@@ -6,6 +6,7 @@ import requests
 from typing import List, Dict, Any
 from plotsiris.domain.models import GeoEntity, RoutePath
 from plotsiris.config import REQUEST_TIMEOUT_SEC
+from plotsiris.services.http_client import safe_get
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ class AviationService:
             try:
                 # Attempt OpenSky Anonymous State API
                 url = "https://opensky-network.org/api/states/all"
-                resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
+                resp = safe_get(url, timeout=10)
                 if resp.status_code == 200:
                     data = resp.json()
                     states = data.get("states", [])

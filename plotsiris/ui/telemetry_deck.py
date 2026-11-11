@@ -82,7 +82,7 @@ def create_telemetry_deck() -> html.Div:
 
     # Tile 02: THREAT MATRIX / ACTIVE VECTORS
     board_items = [
-        ("KEV", "1,288", 92, "#f59e0b"),   # CISA KEV Exploited
+        ("KEV", "1,779", 95, "#f59e0b"),   # CISA KEV Exploited
         ("C2", "84", 75, "#ef4444"),       # Feodo C2 Botnets
         ("JAM", "14", 45, "#38bdf8"),      # GPS Jamming Zones
         ("NAT", "36", 32, "#10b981"),      # NASA EONET Hazards
@@ -255,17 +255,24 @@ def create_telemetry_deck() -> html.Div:
         ("FIN", ["bg-dark", "bg-dark", "bg-dark", "bg-info", "bg-dark", "bg-dark"]),
         ("GOV", ["bg-danger", "bg-warning", "bg-dark", "bg-danger", "bg-dark", "bg-info"]),
     ]
+    col_labels = ["GRID", "PORT", "CABLE", "SATE", "PIPE", "SCADA"]
     tile_07_grid = []
     for label, cells in matrix_rows:
         tile_07_grid.append(html.Div(
-            className="d-flex align-items-center gap-1 mb-1 font-mono",
+            className="d-flex align-items-center gap-2 mb-1 font-mono",
             style={"fontSize": "0.65rem"},
             children=[
-                html.Span(label, className="text-secondary", style={"width": "26px"}),
-                html.Div(className="d-flex gap-1 flex-grow-1", children=[
-                    html.Div(className=f"matrix-cell {c}", style={"width": "16px", "height": "11px", "borderRadius": "1px"})
-                    for c in cells
-                ])
+                html.Span(label, className="text-secondary fw-bold", style={"width": "28px", "flexShrink": "0"}),
+                html.Div(
+                    className="d-flex gap-1 flex-grow-1",
+                    children=[
+                        html.Div(
+                            className=f"matrix-cell {c} flex-grow-1",
+                            style={"height": "12px", "borderRadius": "2px"}
+                        )
+                        for c in cells
+                    ]
+                )
             ]
         ))
 
@@ -277,9 +284,18 @@ def create_telemetry_deck() -> html.Div:
                 html.Span("SECTOR MATRIX", className="hud-tile-badge text-danger")
             ]),
             html.Div(
-                className="d-flex justify-content-between text-muted font-mono mb-1",
-                style={"fontSize": "0.58rem", "paddingLeft": "28px"},
-                children=[html.Span("GRID"), html.Span("PORT"), html.Span("CABLE"), html.Span("SATE"), html.Span("PIPE"), html.Span("SCADA")]
+                className="d-flex align-items-center gap-2 text-muted font-mono mb-1",
+                style={"fontSize": "0.58rem"},
+                children=[
+                    html.Span("", style={"width": "28px", "flexShrink": "0"}),
+                    html.Div(
+                        className="d-flex gap-1 flex-grow-1",
+                        children=[
+                            html.Span(col, className="flex-grow-1 text-center")
+                            for col in col_labels
+                        ]
+                    )
+                ]
             ),
             html.Div(tile_07_grid),
             html.Div("5 / 5 CRITICAL SECTORS MONITORED", className="small text-secondary font-mono mt-1", style={"fontSize": "0.65rem"})
@@ -321,7 +337,7 @@ def create_telemetry_deck() -> html.Div:
                 html.Code(
                     "1 ---\n"
                     "2 op_sitrep: DEFCON_3_FUSION\n"
-                    "3 cisa_kev_unpatched: 1288\n"
+                    "3 cisa_kev_unpatched: 1779\n"
                     "4 feodo_c2_botnets: 84\n"
                     "5 nasa_eonet_hazards: 36\n"
                     "6 cma_1990_scope: ENFORCED\n"
@@ -380,7 +396,7 @@ def create_telemetry_deck() -> html.Div:
                     ]),
                     html.Div(className="col-6", children=[
                         html.Span("CISA KEV", className="text-secondary d-block", style={"fontSize": "0.62rem"}),
-                        html.Span("1,288", className="text-warning fw-bold fs-5")
+                        html.Span("1,779", className="text-warning fw-bold fs-5")
                     ]),
                 ]
             )

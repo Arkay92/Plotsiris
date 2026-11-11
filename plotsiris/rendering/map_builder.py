@@ -16,6 +16,34 @@ HAS_SCATTERMAP = hasattr(go, "Scattermap")
 TraceScatterGeo = go.Scattermap if HAS_SCATTERMAP else go.Scattermapbox
 
 
+def _to_rgba(color_str: str, alpha: float = 0.22) -> str:
+    """Convert hex or color string to semi-transparent rgba string for subtle HUD vector lines."""
+    if not color_str:
+        return f"rgba(0, 229, 255, {alpha})"
+    c = str(color_str).strip()
+    if c.startswith("#"):
+        c = c.lstrip("#")
+        if len(c) == 3:
+            c = "".join([x * 2 for x in c])
+        if len(c) == 6:
+            try:
+                r = int(c[0:2], 16)
+                g = int(c[2:4], 16)
+                b = int(c[4:6], 16)
+                return f"rgba({r}, {g}, {b}, {alpha})"
+            except ValueError:
+                pass
+    elif c.startswith("rgba"):
+        parts = c.replace("rgba(", "").replace(")", "").split(",")
+        if len(parts) >= 3:
+            return f"rgba({parts[0].strip()}, {parts[1].strip()}, {parts[2].strip()}, {alpha})"
+    elif c.startswith("rgb("):
+        parts = c.replace("rgb(", "").replace(")", "").split(",")
+        if len(parts) >= 3:
+            return f"rgba({parts[0].strip()}, {parts[1].strip()}, {parts[2].strip()}, {alpha})"
+    return f"rgba(0, 229, 255, {alpha})"
+
+
 class MapBuilder:
     """Constructs GPU-accelerated Plotly Map figures with multi-trace layering."""
 
@@ -26,27 +54,115 @@ class MapBuilder:
         center_lat: float = 20.0,
         center_lon: float = 15.0,
         zoom: float = 1.6,
-        theme: str = "ghost"
+        theme: str = "ghost",
+        uirevision: str = "constant_camera"
     ) -> go.Figure:
         """Render a unified Plotly map with all active intelligence traces."""
         map_style = MAPBOX_STYLE_DARK if theme == "ghost" else MAPBOX_STYLE_LIGHT
 
         fig = go.Figure()
 
-        # 1. Render Polylines / Route Paths (Cables, Flight paths, Orbits, Frontlines)
+        # 1. Render Polylines as subtle transparent HUD vector paths
+        # Plus clickable target endpoint icons with full telemetry inspection
+        endpoint_lats = []
+        endpoint_lons = []
+        endpoint_colors = []
+        endpoint_hover_texts = []
+        endpoint_custom_data = []
+
         for route in routes:
+            # Alpha based on category for optimal balance
+            if route.category in ["conflict", "frontline"]:
+                alpha = 0.28
+                line_width = 1.2
+            elif route.category in ["cables"]:
+                alpha = 0.20
+                line_width = 1.0
+            else:
+                alpha = 0.22
+                line_width = 1.0
+
+            trans_color = _to_rgba(route.color, alpha)
+
+            # Faint, non-distracting vector line
             fig.add_trace(TraceScatterGeo(
                 lat=route.lats,
                 lon=route.lons,
                 mode="lines",
-                name=route.name,
+                name=f"{route.name} (Vector)",
                 line=dict(
-                    width=route.width,
-                    color=route.color,
+                    width=line_width,
+                    color=trans_color
                 ),
                 hoverinfo="text",
-                hovertext=f"<b>{route.name}</b><br>Category: {route.category.replace('_', ' ').title()}",
+                hovertext=f"<b>VECTOR TRACK:</b> {route.name}<br><span style='color:#94a3b8;'>Category:</span> {route.category.replace('_', ' ').title()}",
                 showlegend=False
+            ))
+
+            # Clickable icon at the active endpoint of what's being tracked
+            if route.lats and route.lons:
+                end_lat = route.lats[-1]
+                end_lon = route.lons[-1]
+                cat_display = route.category.replace('_', ' ').title()
+                sev = "HIGH" if route.category in ["conflict", "frontline"] else ("MEDIUM" if route.category in ["satellites", "satellite_orbit"] else "LOW")
+
+                desc = (
+                    f"Active telemetry track for {route.name}. "
+                    f"Current terminal coordinate fix: {end_lat:.3f}°, {end_lon:.3f}°. "
+                    f"Vector contains {len(route.lats)} telemetry waypoints along corridor."
+                )
+
+                hover_html = (
+                    f"<b>TARGET TRACK: {route.name}</b><br>"
+                    f"<span style='color:#a0aec0;'>Vector:</span> {cat_display}<br>"
+                    f"<span style='color:#00e5ff;'>Fix:</span> {end_lat:.3f}°, {end_lon:.3f}°<br>"
+                    f"<span style='color:#38bdf8; font-size:10px;'>● Click icon for telemetry brief</span>"
+                )
+
+                endpoint_customdata = {
+                    "id": f"track_{route.id}",
+                    "category": route.category,
+                    "subcategory": f"ACTIVE TRACK // {cat_display.upper()}",
+                    "title": f"TARGET TRACK: {route.name}",
+                    "description": desc,
+                    "severity": sev,
+                    "color": route.color,
+                    "lat": end_lat,
+                    "lon": end_lon,
+                    "properties": {
+                        "target_name": route.name,
+                        "vector_type": cat_display,
+                        "tracking_status": "LOCKED / ACTIVE VECTOR",
+                        "origin_fix": f"{route.lats[0]:.2f}°, {route.lons[0]:.2f}°",
+                        "terminal_fix": f"{end_lat:.2f}°, {end_lon:.2f}°",
+                        "total_fixes": len(route.lats),
+                        **route.properties
+                    }
+                }
+
+                endpoint_lats.append(end_lat)
+                endpoint_lons.append(end_lon)
+                endpoint_colors.append(route.color)
+                endpoint_hover_texts.append(hover_html)
+                endpoint_custom_data.append(endpoint_customdata)
+
+        # Add clickable tracking endpoint icons
+        if endpoint_lats:
+            fig.add_trace(TraceScatterGeo(
+                lat=endpoint_lats,
+                lon=endpoint_lons,
+                mode="markers",
+                name="Tracked Vectors",
+                marker=dict(
+                    size=10,
+                    color=endpoint_colors,
+                    opacity=0.95,
+                    symbol="circle"
+                ),
+                text=endpoint_hover_texts,
+                hoverinfo="text",
+                customdata=endpoint_custom_data,
+                showlegend=True
             ))
 
         # 2. Group Entities by Category for Layered Traces and Legend Toggles
@@ -120,11 +236,15 @@ class MapBuilder:
         bg_color = "#0a0e14" if theme == "ghost" else "#f8fafc"
         text_color = "#e2e8f0" if theme == "ghost" else "#1e293b"
 
+        rev = uirevision or "constant_camera"
         map_config = dict(
             style=map_style,
-            center=dict(lat=center_lat, lon=center_lon),
-            zoom=zoom,
+            uirevision=rev,
         )
+        if center_lat is not None and center_lon is not None:
+            map_config["center"] = dict(lat=center_lat, lon=center_lon)
+        if zoom is not None:
+            map_config["zoom"] = zoom
 
         layout_kwargs = {
             "margin": dict(l=0, r=0, t=0, b=0),
@@ -145,7 +265,7 @@ class MapBuilder:
                 bordercolor="#00e5ff" if theme == "ghost" else "#0284c7",
                 font=dict(family="JetBrains Mono, monospace", size=11, color="#f8fafc" if theme == "ghost" else "#0f172a")
             ),
-            "uirevision": "constant_camera"
+            "uirevision": rev
         }
 
         layout_kwargs["autosize"] = True

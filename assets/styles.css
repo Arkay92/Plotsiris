@@ -106,15 +106,129 @@ body {
     color: #ffffff;
 }
 
-/* Left Layer Rail */
-.layer-rail {
-    position: absolute;
-    top: 60px;
-    left: 14px;
-    width: 290px;
-    max-height: calc(100vh - 80px);
-    z-index: 900;
+/* Left Intelligence Layers Sidebar - Collapsible & Docked (Non-Obscuring) */
+.layers-sidebar {
+    width: 275px;
+    min-width: 275px;
+    max-width: 275px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: rgba(8, 12, 20, 0.94);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-right: 1px solid rgba(0, 229, 255, 0.25);
+    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6);
+    z-index: 15;
+    transition: width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                min-width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                max-width 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+                opacity 0.2s ease,
+                padding 0.25s ease;
+    overflow: hidden;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.layers-sidebar-collapsed {
+    width: 0 !important;
+    min-width: 0 !important;
+    max-width: 0 !important;
+    padding: 0 !important;
+    border-right: none !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+.layers-sidebar-header {
+    padding: 10px 14px;
+    background: rgba(15, 23, 42, 0.85);
+    border-bottom: 1px solid rgba(30, 41, 59, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+}
+
+.layers-sidebar-content {
+    flex: 1 1 auto;
     overflow-y: auto;
+    overflow-x: hidden;
+    padding: 8px 10px;
+}
+
+/* Custom Tactical Scrollbar */
+.layers-sidebar-content::-webkit-scrollbar {
+    width: 4px;
+}
+.layers-sidebar-content::-webkit-scrollbar-track {
+    background: rgba(5, 8, 16, 0.5);
+}
+.layers-sidebar-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 229, 255, 0.3);
+    border-radius: 2px;
+}
+.layers-sidebar-content::-webkit-scrollbar-thumb:hover {
+    background: rgba(0, 229, 255, 0.6);
+}
+
+.layers-sidebar-footer {
+    padding: 8px 12px;
+    background: rgba(5, 8, 16, 0.7);
+    border-top: 1px solid rgba(30, 41, 59, 0.6);
+    flex-shrink: 0;
+}
+
+/* Expand Tab when Sidebar is Collapsed */
+.expand-sidebar-tab {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 25;
+    background: rgba(8, 14, 26, 0.92);
+    border: 1px solid rgba(0, 229, 255, 0.45);
+    border-left: none;
+    border-radius: 0 6px 6px 0;
+    padding: 12px 5px;
+    cursor: pointer;
+    color: #00e5ff;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 4px 0 15px rgba(0, 229, 255, 0.2);
+    transition: all 0.2s ease;
+}
+
+.expand-sidebar-tab:hover {
+    background: rgba(0, 229, 255, 0.15);
+    border-color: #00e5ff;
+    box-shadow: 4px 0 20px rgba(0, 229, 255, 0.4);
+}
+
+.expand-tab-text {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    font-family: var(--font-mono, monospace);
+    color: #00e5ff;
+}
+
+/* Fallback / Legacy rail classes */
+.layer-rail {
+    position: relative;
+    width: 275px;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.layer-rail-minimized {
+    width: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
 .layer-item {
@@ -144,19 +258,71 @@ body {
     border: 1px solid rgba(0, 229, 255, 0.3);
 }
 
-/* Inspector Detail Floating Card */
-.inspector-card {
-    position: absolute;
-    bottom: 24px;
-    left: 320px;
-    width: 380px;
-    z-index: 900;
-    animation: fadeIn 0.2s ease-in-out;
+/* Prominent Centered Inspector Modal Backdrop & Card */
+.inspector-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(4, 7, 14, 0.72);
+    backdrop-filter: blur(5px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: backdropFadeIn 0.2s ease-out;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+@keyframes backdropFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.inspector-card {
+    position: relative;
+    width: 520px;
+    max-width: 92vw;
+    background: rgba(10, 16, 26, 0.96) !important;
+    border: 1px solid rgba(0, 229, 255, 0.7) !important;
+    box-shadow: 0 0 45px rgba(0, 229, 255, 0.32), 0 25px 60px rgba(0, 0, 0, 0.95) !important;
+    border-radius: 8px;
+    animation: modalPopIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 2050;
+}
+
+@keyframes modalPopIn {
+    from {
+        opacity: 0;
+        transform: scale(0.92) translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.inspector-loading-spinner ._dash-loading-callback {
+    background-color: transparent !important;
+}
+
+/* All Clickable Points and Hover Cursor on Map & Graph */
+#main-map .mapboxgl-canvas-container.mapboxgl-interactive,
+#main-map .maplibregl-canvas-container.maplibregl-interactive,
+#main-map canvas.mapboxgl-canvas,
+#main-map canvas.maplibregl-canvas,
+#main-map .point,
+#main-map svg .point,
+#main-map path.point,
+#main-map .hovertext,
+#main-map .hoverlayer,
+#main-graph .point,
+#main-graph svg .point,
+#main-graph path.point,
+#main-graph .hovertext,
+#main-graph .hoverlayer,
+.js-plotly-plot .plotly .cursor-pointer {
+    cursor: pointer !important;
 }
 
 /* Offcanvas Drawer Panels */
@@ -434,3 +600,107 @@ body {
 .matrix-cell.bg-dark {
     background-color: #0f172a !important;
 }
+
+/* ==========================================================================
+   Live Breaking Alert Box (Top-Right Eye-Catching HUD Notification)
+   ========================================================================== */
+.breaking-alert-wrapper {
+    position: fixed;
+    top: 66px;
+    right: 20px;
+    z-index: 1055;
+    width: 410px;
+    max-width: calc(100vw - 36px);
+    pointer-events: auto;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.breaking-alert-card {
+    position: relative;
+    background: rgba(8, 12, 20, 0.95);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(239, 68, 68, 0.7);
+    border-radius: 4px;
+    box-shadow: 0 0 35px rgba(239, 68, 68, 0.38), 0 10px 40px rgba(0, 0, 0, 0.9);
+    animation: slideInFromRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    overflow: hidden;
+}
+
+.breaking-alert-card:hover {
+    border-color: #ef4444;
+    box-shadow: 0 0 45px rgba(239, 68, 68, 0.55), 0 14px 48px rgba(0, 0, 0, 0.95);
+}
+
+.breaking-alert-strip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #ef4444, #f59e0b, #ef4444);
+    background-size: 200% 100%;
+    animation: alertStripScan 2s linear infinite;
+}
+
+.breaking-alert-strip.warning {
+    background: linear-gradient(90deg, #f59e0b, #eab308, #f59e0b);
+}
+
+.breaking-radar-dot {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    background-color: #ef4444;
+    border-radius: 50%;
+    animation: breakingRadarPulse 1.4s infinite;
+}
+
+@keyframes breakingRadarPulse {
+    0% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.85);
+    }
+    70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 9px rgba(239, 68, 68, 0);
+    }
+    100% {
+        transform: scale(0.9);
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+    }
+}
+
+@keyframes alertStripScan {
+    0% { background-position: 0% 0; }
+    100% { background-position: 200% 0; }
+}
+
+@keyframes slideInFromRight {
+    0% {
+        opacity: 0;
+        transform: translateX(60px) scale(0.96);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0) scale(1);
+    }
+}
+
+.btn-close-alert {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.9rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 5px;
+    border-radius: 2px;
+    transition: color 0.15s ease, background 0.15s ease;
+}
+
+.btn-close-alert:hover {
+    color: #ef4444;
+    background: rgba(239, 68, 68, 0.2);
+}
+

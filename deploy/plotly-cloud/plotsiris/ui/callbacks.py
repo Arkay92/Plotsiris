@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
-from dash import Dash, Input, Output, State, ALL, callback_context, html, no_update
+from dash import Dash, Input, Output, State, ALL, Patch, callback_context, html, no_update
 import dash_bootstrap_components as dbc
 
 from plotsiris.domain.constants import REGION_PRESETS, LAYER_DEFINITIONS
@@ -14,6 +15,7 @@ from plotsiris.services.data_manager import data_manager
 from plotsiris.rendering.map_builder import MapBuilder
 from plotsiris.ui.osint_panel import render_osint_result
 from plotsiris.ui.ai_panel import render_user_message, render_analyst_message
+from plotsiris.ui.breaking_alert import BREAKING_EVENTS
 
 logger = logging.getLogger(__name__)
 
@@ -37,21 +39,105 @@ def register_callbacks(app: Dash) -> None:
     @app.callback(
         Output("map-camera-store", "data"),
         Input({"type": "region-preset-btn", "index": ALL}, "n_clicks"),
+        Input("btn-alert-locate", "n_clicks"),
+        State("breaking-alert-store", "data"),
         State("map-camera-store", "data"),
         prevent_initial_call=True
     )
-    def handle_region_preset(n_clicks_list, current_camera):
+    def handle_region_preset(n_clicks_list, n_locate, alert_data, current_camera):
         ctx = callback_context
         if not ctx.triggered:
             return current_camera
 
         triggered_id = ctx.triggered_id
+        curr_cam = current_camera or {"lat": 20.0, "lon": 15.0, "zoom": 1.6, "rev": 0}
+        next_rev = curr_cam.get("rev", 0) + 1
+
+        if triggered_id == "btn-alert-locate":
+            if alert_data and "lat" in alert_data:
+                return {
+                    "lat": alert_data["lat"],
+                    "lon": alert_data["lon"],
+                    "zoom": alert_data.get("zoom", 5.8),
+                    "rev": next_rev
+                }
+            return current_camera
+
         if isinstance(triggered_id, dict) and triggered_id.get("type") == "region-preset-btn":
             preset_key = triggered_id.get("index")
             preset = REGION_PRESETS.get(preset_key)
             if preset:
-                return {"lat": preset["lat"], "lon": preset["lon"], "zoom": preset["zoom"]}
+                return {
+                    "lat": preset["lat"],
+                    "lon": preset["lon"],
+                    "zoom": preset["zoom"],
+                    "rev": next_rev
+                }
+
         return current_camera
+
+    # 2b. Live Breaking Event Alert Manager (Top-Right HUD Alert)
+    @app.callback(
+        Output("alert-tag", "children"),
+        Output("alert-badge", "children"),
+        Output("alert-badge", "color"),
+        Output("alert-title", "children"),
+        Output("alert-source-region", "children"),
+        Output("alert-time", "children"),
+        Output("alert-summary", "children"),
+        Output("alert-strip", "className"),
+        Output("breaking-alert-wrapper", "style"),
+        Output("breaking-alert-store", "data"),
+        Input("breaking-alert-interval", "n_intervals"),
+        Input("btn-dismiss-alert", "n_clicks"),
+        State("breaking-alert-store", "data"),
+        prevent_initial_call=True
+    )
+    def manage_breaking_alert(n_intervals, n_dismiss, store_data):
+        ctx = callback_context
+        if not ctx.triggered:
+            return (no_update,) * 10
+
+        triggered_id = ctx.triggered_id
+        if store_data is None:
+            store_data = {"index": 0, "visible": True}
+
+        # Dismiss button clicked
+        if triggered_id == "btn-dismiss-alert":
+            new_store = dict(store_data)
+            new_store["visible"] = False
+            return (
+                no_update, no_update, no_update, no_update, no_update,
+                no_update, no_update, no_update, {"display": "none"}, new_store
+            )
+
+        # Interval triggered -> cycle to next breaking event and make visible
+        curr_idx = store_data.get("index", 0)
+        next_idx = (curr_idx + 1) % len(BREAKING_EVENTS)
+        event = BREAKING_EVENTS[next_idx]
+        sev = event.get("sev", "CRITICAL")
+        sev_color = "danger" if sev == "CRITICAL" else "warning"
+
+        new_store = {
+            "index": next_idx,
+            "visible": True,
+            "lat": event["lat"],
+            "lon": event["lon"],
+            "zoom": event.get("zoom", 5.8)
+        }
+
+        return (
+            event.get("tag", "BREAKING INTEL // PRIORITY 1"),
+            sev,
+            sev_color,
+            event.get("title", ""),
+            f"{event.get('source')} · {event.get('region')}",
+            event.get("time", "Just Now"),
+            event.get("summary", ""),
+            f"breaking-alert-strip {sev.lower()}",
+            {"display": "block"},
+            new_store
+        )
 
     # 3. Main Map Figure Generation
     @app.callback(
@@ -64,6 +150,7 @@ def register_callbacks(app: Dash) -> None:
         State({"type": "layer-toggle", "index": ALL}, "id")
     )
     def update_map(toggle_values, camera, theme, _, toggle_ids):
+        ctx = callback_context
         active_layers = []
         for val, item_id in zip(toggle_values, toggle_ids):
             if val:
@@ -73,18 +160,44 @@ def register_callbacks(app: Dash) -> None:
         routes = data_manager.get_route_paths(active_layers)
         counts = data_manager.get_layer_counts()
 
-        camera = camera or {"lat": 20.0, "lon": 15.0, "zoom": 1.6}
+        triggered_id = ctx.triggered_id if ctx.triggered else None
+        is_explicit_camera_jump = (triggered_id == "map-camera-store") or (triggered_id is None)
+
+        camera = camera or {"lat": 20.0, "lon": 15.0, "zoom": 1.6, "rev": 0}
+        rev_id = f"cam_rev_{camera.get('rev', 0)}"
+
         fig = MapBuilder.build_map(
             entities=entities,
             routes=routes,
-            center_lat=camera["lat"],
-            center_lon=camera["lon"],
-            zoom=camera["zoom"],
-            theme=theme or "ghost"
+            center_lat=camera.get("lat", 20.0),
+            center_lon=camera.get("lon", 15.0),
+            zoom=camera.get("zoom", 1.6),
+            theme=theme or "ghost",
+            uirevision=rev_id
         )
 
         counts_list = [str(counts.get(item_id["index"], 0)) for item_id in toggle_ids]
-        return fig, counts_list
+
+        if is_explicit_camera_jump:
+            return fig, counts_list
+
+        # For background feed refreshes, layer toggles, and theme changes,
+        # return a Patch that updates data/styling ONLY without touching map center/zoom!
+        fig_dict = fig.to_dict()
+        fig_patch = Patch()
+        fig_patch["data"] = fig_dict["data"]
+        if triggered_id == "theme-store":
+            layout_d = fig_dict.get("layout", {})
+            fig_patch["layout"]["paper_bgcolor"] = layout_d.get("paper_bgcolor")
+            fig_patch["layout"]["plot_bgcolor"] = layout_d.get("plot_bgcolor")
+            fig_patch["layout"]["font"] = layout_d.get("font")
+            fig_patch["layout"]["legend"] = layout_d.get("legend")
+            fig_patch["layout"]["hoverlabel"] = layout_d.get("hoverlabel")
+            map_key = "map" if "map" in layout_d else "mapbox"
+            if map_key in layout_d:
+                fig_patch["layout"][map_key]["style"] = layout_d[map_key].get("style")
+
+        return fig_patch, counts_list
 
     # 4. Select All Layers Button
     @app.callback(
@@ -97,10 +210,10 @@ def register_callbacks(app: Dash) -> None:
         all_on = all(current_values)
         return [not all_on] * len(current_values)
 
-    # 5. Map Click Inspection Card
+    # 5. Map & Graph Click Inspection Card (Prominent Centered Modal with Spinner)
     @app.callback(
         Output("selected-entity-store", "data"),
-        Output("inspector-card-container", "style"),
+        Output("inspector-card-backdrop", "style"),
         Output("inspector-title", "children"),
         Output("inspector-category", "children"),
         Output("inspector-description", "children"),
@@ -109,23 +222,32 @@ def register_callbacks(app: Dash) -> None:
         Output("inspector-severity-badge", "color"),
         Output("btn-inspector-camera", "style"),
         Input("main-map", "clickData"),
+        Input("main-graph", "clickData"),
         Input("btn-close-inspector", "n_clicks"),
+        Input("btn-inspector-camera", "n_clicks"),
+        Input("btn-inspector-osint", "n_clicks"),
+        Input("btn-inspector-ai", "n_clicks"),
         State("selected-entity-store", "data"),
         prevent_initial_call=True
     )
-    def inspect_map_point(click_data, close_clicks, current_entity):
+    def inspect_map_point(map_click, graph_click, close_clicks, n_cam, n_osint, n_ai, current_entity):
         ctx = callback_context
         if not ctx.triggered:
-            return None, {"display": "none"}, "", "", "", "", "", "info", {"display": "none"}
+            return current_entity, {"display": "none"}, no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
         triggered_id = ctx.triggered_id
-        if triggered_id == "btn-close-inspector":
-            return None, {"display": "none"}, "", "", "", "", "", "info", {"display": "none"}
+        # When user clicks Close or any action button on the inspector modal (CCTV, OSINT, AI), close the modal immediately
+        if triggered_id in ("btn-close-inspector", "btn-inspector-camera", "btn-inspector-osint", "btn-inspector-ai"):
+            return current_entity, {"display": "none"}, no_update, no_update, no_update, no_update, no_update, no_update, no_update
+
+        click_data = map_click if triggered_id == "main-map" else graph_click
 
         if click_data and "points" in click_data and len(click_data["points"]) > 0:
+            # Simulated high-precision target lock-in telemetry delay for spinner
+            time.sleep(0.35)
             point = click_data["points"][0]
             custom = point.get("customdata")
-            if custom:
+            if custom and isinstance(custom, dict):
                 sev = custom.get("severity", "INFO")
                 color = "danger" if sev in ("CRITICAL", "HIGH") else ("warning" if sev == "ELEVATED" else "info")
                 is_cctv = custom.get("category") == "cctv"
@@ -136,7 +258,7 @@ def register_callbacks(app: Dash) -> None:
 
                 return (
                     custom,
-                    {"display": "block"},
+                    {"display": "flex"},
                     custom.get("title", "Selected Entity"),
                     custom.get("subcategory", custom.get("category", "Intelligence Item")).upper(),
                     custom.get("description", "No details available."),
@@ -144,6 +266,24 @@ def register_callbacks(app: Dash) -> None:
                     sev,
                     color,
                     camera_btn_style
+                )
+            else:
+                # Handle graph nodes or points without full customdata dict
+                node_text = point.get("text", "Topological Node")
+                if isinstance(node_text, str) and node_text.strip():
+                    clean_title = node_text.strip()
+                else:
+                    clean_title = "Selected Intelligence Node"
+                return (
+                    {"title": clean_title, "category": "threat_graph", "severity": "HIGH", "lat": 0.0, "lon": 0.0},
+                    {"display": "flex"},
+                    clean_title,
+                    "TOPOLOGICAL THREAT NODE",
+                    f"Correlated cluster node active in C2 focal matrix: {clean_title}",
+                    "Normalized Vectors: [AZ 38.8°, Z 235]",
+                    "ACTIVE",
+                    "info",
+                    {"display": "none"}
                 )
 
         return None, {"display": "none"}, "", "", "", "", "", "info", {"display": "none"}
@@ -157,6 +297,9 @@ def register_callbacks(app: Dash) -> None:
         prevent_initial_call=True
     )
     def toggle_osint(n1, n2, is_open):
+        ctx = callback_context
+        if ctx.triggered_id == "btn-inspector-osint":
+            return True
         return not is_open
 
     @app.callback(
@@ -167,6 +310,9 @@ def register_callbacks(app: Dash) -> None:
         prevent_initial_call=True
     )
     def toggle_ai(n1, n2, is_open):
+        ctx = callback_context
+        if ctx.triggered_id == "btn-inspector-ai":
+            return True
         return not is_open
 
     @app.callback(
@@ -190,10 +336,11 @@ def register_callbacks(app: Dash) -> None:
     @app.callback(
         Output("news-offcanvas", "is_open"),
         Input("btn-open-news", "n_clicks"),
+        Input("btn-alert-intel", "n_clicks"),
         State("news-offcanvas", "is_open"),
         prevent_initial_call=True
     )
-    def toggle_news(n, is_open):
+    def toggle_news(n_open, n_alert, is_open):
         return not is_open
 
     @app.callback(
@@ -206,81 +353,270 @@ def register_callbacks(app: Dash) -> None:
     def toggle_graph(n_open, n_close, is_open):
         return not is_open
 
-    # 7. CCTV Camera Viewer Modal
+    # 7. CCTV Camera Viewer Modal (Real DOT Snapshots, TfL Streams & Channel Switching)
+    app.clientside_callback(
+        """
+        function(n_intervals, active_feed, ptz_state) {
+            const d = new Date();
+            const utc = d.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+            const mode = (active_feed && active_feed.mode === 'video') ? 'STREAM' : 'LIVE SENSOR';
+            const z = (ptz_state && ptz_state.zoom) ? Number(ptz_state.zoom) : 1.0;
+            const zoom = (z === 1.0) ? '1.0' : z.toFixed(2).replace(/0$/, '');
+            return 'LIVE // ' + utc + ' // ' + mode + ' // PTZ ' + zoom + 'x';
+        }
+        """,
+        Output("camera-hud-timestamp", "children"),
+        Input("camera-live-tick-interval", "n_intervals"),
+        Input("camera-active-feed-store", "data"),
+        Input("camera-ptz-store", "data"),
+    )
+
     @app.callback(
         Output("camera-modal", "is_open"),
+        Output("camera-live-tick-interval", "disabled"),
+        Output("camera-snapshot-refresh-interval", "disabled"),
         Output("camera-modal-title", "children"),
         Output("camera-stream-video", "src"),
         Output("camera-stream-img", "src"),
         Output("camera-metadata", "children"),
-        Output("camera-hud-timestamp", "children"),
+        Output("camera-active-feed-store", "data"),
+        Output("camera-channel-select", "value"),
+        Output("camera-hud-channel-badge", "children"),
+        Output("btn-cam-mode-snapshot", "outline"),
+        Output("btn-cam-mode-video", "outline"),
         Input("btn-inspector-camera", "n_clicks"),
         Input("btn-open-cctv", "n_clicks"),
         Input("btn-close-camera-modal", "n_clicks"),
+        Input("camera-channel-select", "value"),
+        Input("btn-cam-next", "n_clicks"),
+        Input("btn-cam-refresh", "n_clicks"),
+        Input("btn-cam-mode-snapshot", "n_clicks"),
+        Input("btn-cam-mode-video", "n_clicks"),
+        Input("camera-snapshot-refresh-interval", "n_intervals"),
         State("selected-entity-store", "data"),
         State("camera-modal", "is_open"),
+        State("camera-active-feed-store", "data"),
         prevent_initial_call=True
     )
-    def open_camera_modal(n_insp, n_cctv, n_close, selected_entity, is_open):
+    def manage_camera_viewer(
+        n_insp,
+        n_cctv,
+        n_close,
+        selected_channel,
+        n_next,
+        n_refresh,
+        n_mode_snap,
+        n_mode_vid,
+        n_intervals,
+        selected_entity,
+        is_open,
+        active_feed,
+    ):
         from plotsiris.domain.constants import CCTV_REGISTRY
+        from plotsiris.services.cctv import CctvService
+
         ctx = callback_context
         if not ctx.triggered:
-            return is_open, no_update, no_update, no_update, no_update, no_update
+            return (no_update,) * 12
 
         triggered_id = ctx.triggered_id
+
         if triggered_id == "btn-close-camera-modal":
-            return False, no_update, no_update, no_update, no_update, no_update
+            # Stop active video/network stream cleanly when modal closes
+            return False, True, True, no_update, "", no_update, no_update, no_update, no_update, no_update, no_update, no_update
 
-        default_cam = CCTV_REGISTRY[0] if CCTV_REGISTRY else {}
+        cctv_service = CctvService()
 
-        entity = selected_entity or {
-            "title": default_cam.get("name", "San Francisco Bay Bridge / I-80"),
-            "lat": default_cam.get("lat", 37.7983),
-            "lon": default_cam.get("lon", -122.3778),
-            "properties": default_cam
-        }
+        # Background 5s timer inside modal: auto-refresh live snapshot feeds
+        if triggered_id == "camera-snapshot-refresh-interval":
+            if not is_open or not active_feed:
+                return (no_update,) * 12
+            mode = active_feed.get("mode", "live_snapshot")
+            if mode != "live_snapshot":
+                return (no_update,) * 12
 
-        props = entity.get("properties", default_cam)
-        stream_url = props.get("stream_url", "/assets/surveillance_stream.mp4")
-        if not stream_url or "unsplash" in stream_url:
-            stream_url = "/assets/surveillance_stream.mp4"
-        thumb_url = props.get("thumbnail_url", "/assets/surveillance_stream.gif")
-        if not thumb_url or thumb_url.endswith(".mp4") or "unsplash" in thumb_url:
-            thumb_url = "/assets/surveillance_stream.gif"
-        name = props.get("name", entity.get("title", "Surveillance Feed"))
-        country = props.get("country", "United States")
-        provider = props.get("provider", "Caltrans District 4")
+            feed = cctv_service.resolve_live_feed(
+                active_feed.get("id"),
+                cache_buster=True,
+                preferred_mode="live_snapshot",
+            )
+            badge = "LIVE SENSOR // AUTO-REFRESH 5s" if feed["is_external_live"] else "OPTICAL SENSOR // STANDBY"
+            meta_text = (
+                f"Location: {feed['country']} ({feed['lat']:.4f}°, {feed['lon']:.4f}°) | "
+                f"Authority: {feed['provider']} | Mode: LIVE DOT SNAPSHOT (Synced {feed['resolved_utc']})"
+            )
+            return (
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                no_update,
+                feed["snapshot_url"],
+                meta_text,
+                feed,
+                no_update,
+                badge,
+                False,
+                True,
+            )
 
-        now_str = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
-        meta_text = (
-            f"Location: {country} ({entity.get('lat', 0):.4f}°, {entity.get('lon', 0):.4f}°) | "
-            f"Authority: {provider} | Feed Status: ONLINE (Authenticated H.264 Live Stream)"
+        # Resolve target cam_id and preferred mode based on trigger
+        target_cam_id: Optional[str] = None
+        preferred_mode: Optional[str] = None
+
+        if triggered_id in ("btn-inspector-camera", "btn-open-cctv"):
+            entity = selected_entity or {}
+            props = entity.get("properties") or {}
+            if props.get("id") and any(c["id"] == props["id"] for c in CCTV_REGISTRY):
+                target_cam_id = props["id"]
+            elif CCTV_REGISTRY:
+                target_cam_id = CCTV_REGISTRY[0]["id"]
+        elif triggered_id == "camera-channel-select":
+            if not is_open:
+                return (no_update,) * 12
+            if active_feed and selected_channel == active_feed.get("id"):
+                return (no_update,) * 12
+            target_cam_id = selected_channel
+        elif triggered_id == "btn-cam-next":
+            ids = [c["id"] for c in CCTV_REGISTRY]
+            curr_id = (active_feed or {}).get("id") or selected_channel
+            if curr_id in ids:
+                target_cam_id = ids[(ids.index(curr_id) + 1) % len(ids)]
+            else:
+                target_cam_id = ids[0] if ids else None
+        elif triggered_id == "btn-cam-refresh":
+            target_cam_id = (active_feed or {}).get("id") or selected_channel
+            preferred_mode = (active_feed or {}).get("mode")
+        elif triggered_id == "btn-cam-mode-snapshot":
+            target_cam_id = (active_feed or {}).get("id") or selected_channel
+            preferred_mode = "live_snapshot"
+        elif triggered_id == "btn-cam-mode-video":
+            target_cam_id = (active_feed or {}).get("id") or selected_channel
+            preferred_mode = "video"
+
+        feed = cctv_service.resolve_live_feed(
+            cam_id=target_cam_id,
+            cache_buster=True,
+            preferred_mode=preferred_mode,
         )
-        hud_text = f"STREAM ACTIVE // 30.0 FPS // {now_str}"
-        return True, f"SURVEILLANCE: {name}", stream_url, thumb_url, meta_text, hud_text
+        mode = feed["mode"]
 
-    # 7b. Camera Optical Filters (Normal, NVG Green, FLIR Thermal)
+        if mode == "live_snapshot":
+            video_src = ""
+            img_src = feed["snapshot_url"]
+            badge = "LIVE SENSOR // AUTO-REFRESH 5s" if feed["is_external_live"] else "OPTICAL SENSOR // STANDBY"
+            status_desc = f"ONLINE (Live DOT Frame Sync · {feed['resolved_utc']})"
+            snap_outline = False
+            vid_outline = True
+            snap_refresh_disabled = False
+        else:
+            video_src = feed["stream_url"]
+            img_src = feed["snapshot_url"]
+            is_ext_vid = str(feed["stream_url"]).startswith("http")
+            badge = "LIVE MUNICIPAL STREAM" if is_ext_vid else "OPTICAL ARCHIVE STREAM"
+            status_desc = (
+                f"ONLINE (Live Authority Stream · {feed['resolved_utc']})"
+                if is_ext_vid
+                else f"ONLINE (Optical Sector Clip · {feed['resolved_utc']})"
+            )
+            snap_outline = True
+            vid_outline = False
+            snap_refresh_disabled = True
+
+        meta_text = (
+            f"Location: {feed['country']} ({feed['lat']:.4f}°, {feed['lon']:.4f}°) | "
+            f"Authority: {feed['provider']} | Feed Status: {status_desc}"
+        )
+
+        return (
+            True,
+            False,
+            snap_refresh_disabled,
+            f"SURVEILLANCE: {feed['name']}",
+            video_src,
+            img_src,
+            meta_text,
+            feed,
+            feed["id"],
+            badge,
+            snap_outline,
+            vid_outline,
+        )
+
+    # 7b. Camera PTZ Zoom & Optical Filters (Normal, NVG Green, FLIR Thermal)
     @app.callback(
-        Output("camera-stream-video", "style"),
-        Output("camera-stream-img", "style"),
+        Output("camera-ptz-store", "data"),
+        Output("btn-cam-opt-normal", "color"),
+        Output("btn-cam-opt-nvg", "color"),
+        Output("btn-cam-opt-flir", "color"),
         Input("btn-cam-opt-normal", "n_clicks"),
         Input("btn-cam-opt-nvg", "n_clicks"),
         Input("btn-cam-opt-flir", "n_clicks"),
+        Input("btn-cam-zoom-in", "n_clicks"),
+        Input("btn-cam-zoom-out", "n_clicks"),
+        State("camera-ptz-store", "data"),
         prevent_initial_call=True
     )
-    def update_camera_filter(n_norm, n_nvg, n_flir):
+    def update_camera_ptz_store(n_norm, n_nvg, n_flir, n_zin, n_zout, ptz_state):
         ctx = callback_context
-        base_style = {"maxHeight": "440px", "objectFit": "cover", "backgroundColor": "#050810", "width": "100%", "display": "block"}
+        state = dict(ptz_state or {"zoom": 1.0, "filter": "normal"})
         if not ctx.triggered:
-            return base_style, base_style
+            return state, "info", "outline-success", "outline-warning"
+
         tid = ctx.triggered_id
-        if tid == "btn-cam-opt-nvg":
-            st = {**base_style, "filter": "sepia(100%) hue-rotate(80deg) saturate(350%) contrast(160%) brightness(1.1)"}
-            return st, st
+        zoom_steps = [1.0, 1.35, 1.75, 2.2, 2.6]
+        curr_zoom = float(state.get("zoom", 1.0))
+
+        if tid == "btn-cam-opt-normal":
+            state["filter"] = "normal"
+        elif tid == "btn-cam-opt-nvg":
+            state["filter"] = "nvg"
         elif tid == "btn-cam-opt-flir":
-            st = {**base_style, "filter": "invert(100%) hue-rotate(180deg) contrast(220%) saturate(200%)"}
-            return st, st
-        return base_style, base_style
+            state["filter"] = "flir"
+        elif tid == "btn-cam-zoom-in":
+            next_steps = [z for z in zoom_steps if z > curr_zoom + 0.05]
+            state["zoom"] = next_steps[0] if next_steps else zoom_steps[-1]
+        elif tid == "btn-cam-zoom-out":
+            prev_steps = [z for z in zoom_steps if z < curr_zoom - 0.05]
+            state["zoom"] = prev_steps[-1] if prev_steps else zoom_steps[0]
+
+        filt = state.get("filter", "normal")
+        c_norm = "info" if filt == "normal" else "outline-info"
+        c_nvg = "success" if filt == "nvg" else "outline-success"
+        c_flir = "warning" if filt == "flir" else "outline-warning"
+        return state, c_norm, c_nvg, c_flir
+
+    @app.callback(
+        Output("camera-stream-video", "style"),
+        Output("camera-stream-img", "style"),
+        Input("camera-active-feed-store", "data"),
+        Input("camera-ptz-store", "data"),
+    )
+    def apply_camera_display_style(active_feed, ptz_state):
+        mode = (active_feed or {}).get("mode", "live_snapshot")
+        ptz = ptz_state or {"zoom": 1.0, "filter": "normal"}
+        zoom = float(ptz.get("zoom", 1.0))
+        filt = ptz.get("filter", "normal")
+
+        filter_css = "none"
+        if filt == "nvg":
+            filter_css = "sepia(100%) hue-rotate(80deg) saturate(350%) contrast(160%) brightness(1.1)"
+        elif filt == "flir":
+            filter_css = "invert(100%) hue-rotate(180deg) contrast(220%) saturate(200%)"
+
+        common_style = {
+            "maxHeight": "440px",
+            "objectFit": "cover",
+            "backgroundColor": "#050810",
+            "width": "100%",
+            "transform": f"scale({zoom:.2f})",
+            "transformOrigin": "center center",
+            "transition": "transform 0.2s ease, filter 0.2s ease",
+            "filter": filter_css,
+        }
+        v_style = {**common_style, "display": "block" if mode == "video" else "none"}
+        i_style = {**common_style, "display": "block" if mode == "live_snapshot" else "none"}
+        return v_style, i_style
 
     # 8. OSINT Quick Target Presets
     @app.callback(
@@ -560,3 +896,28 @@ def register_callbacks(app: Dash) -> None:
             return "w-100 h-100 d-none", "w-100 h-100", "secondary", True, "info", False, "map"
         else:
             return "w-100 h-100", "w-100 h-100 d-none", "info", False, "secondary", True, "graph"
+
+    # 15. Collapsible Left Intelligence Layers Sidebar (Docked & Non-Obscuring)
+    @app.callback(
+        Output("layers-sidebar", "className"),
+        Output("btn-expand-sidebar-tab", "className"),
+        Output("btn-toggle-layers-bar", "className"),
+        Output("layers-sidebar-open-store", "data"),
+        Input("btn-toggle-layer-rail", "n_clicks"),
+        Input("btn-toggle-layers-bar", "n_clicks"),
+        Input("btn-expand-sidebar-tab", "n_clicks"),
+        Input("layers-sidebar-header-title", "n_clicks"),
+        State("layers-sidebar-open-store", "data"),
+        prevent_initial_call=True
+    )
+    def toggle_layer_sidebar(n_btn, n_bar, n_tab, n_title, is_open):
+        new_state = not is_open if is_open is not None else False
+        if new_state:
+            sidebar_cls = "layers-sidebar font-mono"
+            tab_cls = "expand-sidebar-tab d-none"
+            bar_cls = "btn btn-sm btn-dark border-secondary text-info fw-bold py-0 px-2 font-mono"
+        else:
+            sidebar_cls = "layers-sidebar layers-sidebar-collapsed font-mono"
+            tab_cls = "expand-sidebar-tab d-flex"
+            bar_cls = "btn btn-sm btn-dark border-secondary text-muted py-0 px-2 font-mono"
+        return sidebar_cls, tab_cls, bar_cls, new_state

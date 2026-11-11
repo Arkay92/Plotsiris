@@ -9,7 +9,7 @@ from plotsiris.services.data_manager import data_manager
 from plotsiris.rendering.map_builder import MapBuilder
 from plotsiris.rendering.graph_builder import EntityGraphBuilder
 from plotsiris.ui.telemetry_deck import create_telemetry_deck
-from plotsiris.ui.layer_panel import create_layer_panel
+from plotsiris.ui.layer_panel import create_layer_panel, create_sidebar_expand_tab
 from plotsiris.ui.osint_panel import create_osint_panel
 from plotsiris.ui.ai_panel import create_ai_panel
 from plotsiris.ui.cyber_panel import create_cyber_panel
@@ -18,6 +18,7 @@ from plotsiris.ui.markets_panel import create_markets_panel
 from plotsiris.ui.news_panel import create_news_panel
 from plotsiris.ui.camera_modal import create_camera_modal
 from plotsiris.ui.inspector_panel import create_inspector_card
+from plotsiris.ui.breaking_alert import create_breaking_alert
 
 
 def create_layout() -> html.Div:
@@ -52,13 +53,18 @@ def create_layout() -> html.Div:
         children=[
             # Hidden State Stores
             dcc.Store(id="selected-entity-store", data=None),
-            dcc.Store(id="map-camera-store", data={"lat": 20.0, "lon": 15.0, "zoom": 1.6}),
+            dcc.Store(id="map-camera-store", data={"lat": 20.0, "lon": 15.0, "zoom": 1.6, "rev": 0}),
             dcc.Store(id="theme-store", data="ghost"),
             dcc.Store(id="osint-latest-result-store", data=None),
             dcc.Store(id="chat-history-store", data=[]),
             dcc.Store(id="active-view-mode-store", data="map"),  # Default: "map", switchable to "graph"
+            dcc.Store(id="layers-sidebar-open-store", data=True),
+            dcc.Store(id="camera-active-feed-store", data={}),
+            dcc.Store(id="camera-ptz-store", data={"zoom": 1.0, "filter": "normal"}),
             dcc.Interval(id="clock-interval", interval=1000, n_intervals=0),
             dcc.Interval(id="feed-refresh-interval", interval=60000, n_intervals=0),
+            dcc.Interval(id="camera-live-tick-interval", interval=1000, n_intervals=0, disabled=True),
+            dcc.Interval(id="camera-snapshot-refresh-interval", interval=5000, n_intervals=0, disabled=True),
 
             # Top Navigation Header matching reference image: AI CONFIGS / OPEN SOURCE
             html.Header(
@@ -145,8 +151,9 @@ def create_layout() -> html.Div:
                         children=[
                             html.Div(className="d-flex align-items-center gap-3", children=[
                                 html.Span("COMMON OPERATING PICTURE / 14 ACTIVE FEEDS · 4,992 ENTITIES", className="text-info fw-bold", style={"letterSpacing": "1px"}),
-                                # View switcher pills (Default: MAP VIEW active)
+                                # View switcher & sidebar toggle pills
                                 dbc.ButtonGroup([
+                                    dbc.Button([html.I(className="bi bi-layout-sidebar-inset me-1"), "LAYERS"], id="btn-toggle-layers-bar", size="sm", color="dark", className="py-0 px-2 font-mono text-info fw-bold border-secondary", style={"fontSize": "0.68rem"}, title="Toggle Intelligence Layers Sidebar"),
                                     dbc.Button("🗺️ MAP VIEW", id="btn-view-map", size="sm", color="info", className="py-0 px-2 fw-bold font-mono", style={"fontSize": "0.68rem"}),
                                     dbc.Button("● GRAPH VIEW", id="btn-view-graph", size="sm", color="secondary", outline=True, className="py-0 px-2 font-mono", style={"fontSize": "0.68rem"})
                                 ], size="sm")
@@ -158,34 +165,54 @@ def create_layout() -> html.Div:
                         ]
                     ),
 
-                    # 1. Tactical MapLibre Map Container (Default View)
+                    # Canvas Main Flex Area: Sibling Sidebar (Left) + Map/Graph Area (Right)
                     html.Div(
-                        id="map-display-container",
-                        className="w-100 h-100",
+                        id="canvas-main-flex",
+                        className="d-flex w-100 h-100 position-relative",
                         style={"paddingTop": "26px", "paddingBottom": "24px"},
                         children=[
-                            dcc.Graph(
-                                id="main-map",
-                                figure=initial_fig,
-                                responsive=True,
-                                config={"displayModeBar": False, "scrollZoom": True, "doubleClick": "reset"},
-                                style={"width": "100%", "height": "100%"}
-                            )
-                        ]
-                    ),
+                            # 1. Collapsible Intelligence Layers Sidebar (Docked, Non-Obscuring)
+                            create_layer_panel(counts),
 
-                    # 2. Constellation Graph Container (Switchable)
-                    html.Div(
-                        id="graph-display-container",
-                        className="w-100 h-100 d-none",
-                        style={"paddingTop": "26px", "paddingBottom": "24px"},
-                        children=[
-                            dcc.Graph(
-                                id="main-graph",
-                                figure=initial_graph,
-                                responsive=True,
-                                config={"displayModeBar": False, "scrollZoom": True},
-                                style={"width": "100%", "height": "100%"}
+                            # 2. Vertical Expand Tab (Visible only when sidebar is collapsed)
+                            create_sidebar_expand_tab(),
+
+                            # 3. Canvas Stage Area: Map & Graph Viewports (Expands to 100% width)
+                            html.Div(
+                                id="canvas-stage-area",
+                                className="flex-grow-1 position-relative h-100",
+                                style={"minWidth": "0", "overflow": "hidden"},
+                                children=[
+                                    # Tactical MapLibre Map Container (Default View)
+                                    html.Div(
+                                        id="map-display-container",
+                                        className="w-100 h-100",
+                                        children=[
+                                            dcc.Graph(
+                                                id="main-map",
+                                                figure=initial_fig,
+                                                responsive=True,
+                                                config={"displayModeBar": False, "scrollZoom": True, "doubleClick": False},
+                                                style={"width": "100%", "height": "100%"}
+                                            )
+                                        ]
+                                    ),
+
+                                    # Constellation Graph Container (Switchable)
+                                    html.Div(
+                                        id="graph-display-container",
+                                        className="w-100 h-100 d-none",
+                                        children=[
+                                            dcc.Graph(
+                                                id="main-graph",
+                                                figure=initial_graph,
+                                                responsive=True,
+                                                config={"displayModeBar": False, "scrollZoom": True},
+                                                style={"width": "100%", "height": "100%"}
+                                            )
+                                        ]
+                                    )
+                                ]
                             )
                         ]
                     ),
@@ -227,7 +254,7 @@ def create_layout() -> html.Div:
             create_telemetry_deck(),
 
             # Floating Panels & Modals (Preserved from existing Plotsiris architecture)
-            create_layer_panel(counts),
+            create_breaking_alert(),
             create_inspector_card(),
             create_osint_panel(),
             create_ai_panel(),

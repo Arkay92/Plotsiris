@@ -79,3 +79,27 @@ def test_ai_analyst():
     briefing = ai.generate_full_briefing({"active_layer_count": 12})
     assert "SITREP" in briefing
     assert "KINETIC & CONFLICT" in briefing
+
+
+def test_cctv_live_feed_resolution():
+    from plotsiris.services.cctv import CctvService
+
+    svc = CctvService()
+    cams = svc.list_cameras()
+    assert len(cams) >= 8
+
+    # Live snapshot feed (Caltrans SF Bay Bridge) appends cache-buster timestamp
+    sf_feed = svc.resolve_live_feed("cam_us_ca_01", cache_buster=True)
+    assert sf_feed["id"] == "cam_us_ca_01"
+    assert sf_feed["mode"] == "live_snapshot"
+    assert sf_feed["is_external_live"] is True
+    assert "?t=" in sf_feed["snapshot_url"]
+
+    # Video feed (London Piccadilly TfL Live) supports snapshot mode override cleanly
+    tfl_vid = svc.resolve_live_feed("cam_uk_piccadilly", cache_buster=True)
+    assert tfl_vid["mode"] == "video"
+    assert "jamcams.tfl.gov.uk" in tfl_vid["stream_url"]
+
+    tfl_snap = svc.resolve_live_feed("cam_uk_piccadilly", cache_buster=True, preferred_mode="live_snapshot")
+    assert tfl_snap["mode"] == "live_snapshot"
+    assert "?t=" in tfl_snap["snapshot_url"]

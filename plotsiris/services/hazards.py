@@ -1,10 +1,11 @@
-"""Natural hazards intelligence: USGS Earthquakes, NASA FIRMS Fires, and Severe Weather."""
+"""Natural hazards intelligence: USGS Earthquakes, NASA EONET Wildfires, and Severe Weather."""
+
+from __future__ import annotations
 
 import logging
-import requests
-from typing import List, Tuple
+from typing import List
 from plotsiris.domain.models import GeoEntity
-from plotsiris.config import REQUEST_TIMEOUT_SEC
+from plotsiris.services.http_client import safe_get
 
 logger = logging.getLogger(__name__)
 
@@ -43,12 +44,12 @@ class HazardsService:
     """Provides real-time seismic, thermal wildfire, and atmospheric storm intelligence."""
 
     def fetch_earthquakes(self, use_network: bool = True) -> List[GeoEntity]:
-        """Fetch live USGS earthquakes or fallback to baseline."""
+        """Fetch live USGS earthquakes (magnitude 2.5+ past 24 hours) or fallback to baseline."""
         if use_network:
             try:
                 url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson"
-                resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
-                if resp.status_code == 200:
+                resp = safe_get(url, timeout=8)
+                if resp and resp.status_code == 200:
                     data = resp.json()
                     features = data.get("features", [])
                     entities = []
@@ -117,8 +118,43 @@ class HazardsService:
             ))
         return baseline_entities
 
-    def fetch_fires(self) -> List[GeoEntity]:
-        """Return active thermal wildfire hotspot detections."""
+    def fetch_fires(self, use_network: bool = True) -> List[GeoEntity]:
+        """Return active thermal wildfire hotspot detections from NASA EONET v3 or baseline."""
+        if use_network:
+            try:
+                url = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=wildfires,volcanoes&limit=30"
+                resp = safe_get(url, timeout=8)
+                if resp and resp.status_code == 200:
+                    events = resp.json().get("events", [])
+                    live_fires = []
+                    for ev in events:
+                        geoms = ev.get("geometry", [])
+                        if geoms:
+                            latest_geom = geoms[-1]
+                            coords = latest_geom.get("coordinates", [])
+                            if len(coords) >= 2:
+                                lon, lat = coords[0], coords[1]
+                                title = ev.get("title", "Active Thermal Hazard")
+                                cat_title = ev.get("categories", [{}])[0].get("title", "Wildfire")
+                                live_fires.append(GeoEntity(
+                                    id=f"eonet_{ev.get('id', 'fire')}",
+                                    lat=float(lat),
+                                    lon=float(lon),
+                                    category="fires",
+                                    subcategory=f"NASA EONET {cat_title}",
+                                    title=f"HAZARD: {title}",
+                                    description=f"NASA Earth Observatory EONET Active Event | Type: {cat_title} | Date: {latest_geom.get('date', 'Recent')}",
+                                    severity="HIGH",
+                                    color="#f97316",
+                                    icon="fire",
+                                    size=12,
+                                    properties={"eonet_id": ev.get("id"), "sources": ev.get("sources")}
+                                ))
+                    if live_fires:
+                        return live_fires
+            except Exception as e:
+                logger.debug(f"NASA EONET fires fetch fallback: {e}")
+
         entities = []
         for f in BASELINE_FIRES:
             entities.append(GeoEntity(
@@ -137,8 +173,42 @@ class HazardsService:
             ))
         return entities
 
-    def fetch_weather(self) -> List[GeoEntity]:
-        """Return severe storms and tropical cyclone monitoring."""
+    def fetch_weather(self, use_network: bool = True) -> List[GeoEntity]:
+        """Return severe storms and tropical cyclone monitoring from NASA EONET v3 or baseline."""
+        if use_network:
+            try:
+                url = "https://eonet.gsfc.nasa.gov/api/v3/events?status=open&category=severeStorms&limit=25"
+                resp = safe_get(url, timeout=8)
+                if resp and resp.status_code == 200:
+                    events = resp.json().get("events", [])
+                    live_weather = []
+                    for ev in events:
+                        geoms = ev.get("geometry", [])
+                        if geoms:
+                            latest_geom = geoms[-1]
+                            coords = latest_geom.get("coordinates", [])
+                            if len(coords) >= 2:
+                                lon, lat = coords[0], coords[1]
+                                title = ev.get("title", "Severe Storm")
+                                live_weather.append(GeoEntity(
+                                    id=f"eonet_wx_{ev.get('id', 'wx')}",
+                                    lat=float(lat),
+                                    lon=float(lon),
+                                    category="weather",
+                                    subcategory="Severe Storm / Tropical Cyclone",
+                                    title=f"STORM: {title}",
+                                    description=f"NASA EONET Atmospheric Detection | Latest fix: {latest_geom.get('date', 'Active')}",
+                                    severity="HIGH",
+                                    color="#06b6d4",
+                                    icon="circle-notch",
+                                    size=13,
+                                    properties={"eonet_id": ev.get("id")}
+                                ))
+                    if live_weather:
+                        return live_weather
+            except Exception as e:
+                logger.debug(f"NASA EONET weather fetch fallback: {e}")
+
         entities = []
         for w in BASELINE_WEATHER:
             entities.append(GeoEntity(

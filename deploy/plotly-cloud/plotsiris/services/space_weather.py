@@ -5,6 +5,7 @@ import requests
 from typing import List, Tuple, Dict, Any
 from plotsiris.domain.models import GeoEntity, RoutePath
 from plotsiris.config import REQUEST_TIMEOUT_SEC
+from plotsiris.services.http_client import safe_get
 
 logger = logging.getLogger(__name__)
 
@@ -130,19 +131,27 @@ class SpaceWeatherService:
         """Fetch live NOAA SWPC Planetary K-Index or return baseline."""
         try:
             url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
-            resp = requests.get(url, timeout=REQUEST_TIMEOUT_SEC)
-            if resp.status_code == 200:
+            resp = safe_get(url, timeout=REQUEST_TIMEOUT_SEC)
+            if resp and resp.status_code == 200:
                 data = resp.json()
                 if len(data) > 1:
                     latest = data[-1]
-                    kp = float(latest[1])
+                    if isinstance(latest, dict):
+                        kp = float(latest.get("Kp", 2.0))
+                        ts = latest.get("time_tag", "Live")
+                    elif isinstance(latest, list):
+                        kp = float(latest[1])
+                        ts = str(latest[0])
+                    else:
+                        kp = 2.0
+                        ts = "Live"
                     return {
                         "kp_index": kp,
                         "status": "G1 Minor Storm" if kp >= 5 else ("Active" if kp >= 4 else "Quiet"),
                         "solar_wind_speed": "442 km/s",
                         "solar_flare": "C2.4 (Low)",
                         "radio_blackout": "R0 None",
-                        "updated": latest[0]
+                        "updated": ts
                     }
         except Exception as e:
             logger.debug(f"NOAA SWPC live fetch skipped: {e}")
